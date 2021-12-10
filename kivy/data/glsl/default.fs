@@ -1,4 +1,6 @@
+#version 320 es
+
 $HEADER$
-void main (void){
-    gl_FragColor = frag_color * texture2D(texture0, tex_coord0);
+void main(void){
+    fragColor=frag_color*texture(texture0,tex_coord0);
 }
