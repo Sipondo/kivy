@@ -9,6 +9,6 @@ in vec2 tex_coord0;
 /* uniform texture samplers */
 uniform sampler2D texture0;
 
-out vec4 fragColor;
-
 uniform mat4 frag_modelview_mat;
+
+out vec4 fragColor;

@@ -7,8 +7,8 @@ out vec4 frag_color;
 out vec2 tex_coord0;
 
 /* vertex attributes */
-in vec2     vPosition;
-in vec2     vTexCoords0;
+in vec2 vPosition;
+in vec2 vTexCoords0;
 
 /* uniform variables */
 uniform mat4 modelview_mat;
