@@ -10,7 +10,7 @@ core provider can select an OpenGL ES or a 'classic' desktop OpenGL library.
 import sys
 from os import environ
 
-MIN_REQUIRED_GL_VERSION = (2, 0)
+MIN_REQUIRED_GL_VERSION = (3, 2)
 
 
 def msgbox(message):
