@@ -75,13 +75,17 @@ from kivy.cache import Cache
 from kivy import kivy_shader_dir
 
 cdef str header_vs = ''
+cdef str header_gs = ''
 cdef str header_fs = ''
 cdef str default_vs = ''
+cdef str default_gs = ''
 cdef str default_fs = ''
 with open(join(kivy_shader_dir, 'header.vs')) as fin:
     header_vs = fin.read()
 with open(join(kivy_shader_dir, 'header.fs')) as fin:
     header_fs = fin.read()
+
+
 with open(join(kivy_shader_dir, 'default.vs')) as fin:
     default_vs = fin.read()
 with open(join(kivy_shader_dir, 'default.fs')) as fin:
@@ -108,7 +112,7 @@ cdef class ShaderSource:
         cgl.glCompileShader(shader)
 
         # show any messages
-        ctype = 'vertex' if self.shadertype == GL_VERTEX_SHADER else 'fragment'
+        ctype = 'vertex' if self.shadertype == GL_VERTEX_SHADER else ('geometry' if self.shadertype == GL_GEOMETRY_SHADER else 'fragment')
 
         # ensure compilation is ok
         cgl.glGetShaderiv(shader, GL_COMPILE_STATUS, &success)
@@ -158,29 +162,33 @@ cdef class ShaderSource:
 
 
 cdef class Shader:
-    '''Create a vertex or fragment shader.
+    '''Create a vertex, geometry or fragment shader.
 
     :Parameters:
         `vs`: string, defaults to None
             Source code for vertex shader
-        `fs`: string, defaults to None
+        `gs`: string, defaults to None
+            Source code for geometry shader
+        ````: string, defaults to None
             Source code for fragment shader
     '''
     def __cinit__(self):
         self._success = 0
         self.program = 0
         self.vertex_shader = None
+        self.geometry_shader = None
         self.fragment_shader = None
         self.uniform_locations = dict()
         self.uniform_values = dict()
 
-    def __init__(self, str vs=None, str fs=None, str source=None):
+    def __init__(self, str vs=None, str gs=None, str fs=None, str source=None):
         self.program = cgl.glCreateProgram()
         if source:
             self.source = source
         else:
             self._source = None
             self.fs = fs
+            self.gs = gs
             self.vs = vs
 
     def __dealloc__(self):
@@ -196,6 +204,9 @@ cdef class Shader:
         if self.vertex_shader:
             self.vertex_shader.shader = -1
             self.vertex_shader = None
+        if self.geometry_shader:
+            self.geometry_shader.shader = -1
+            self.geometry_shader = None
         if self.fragment_shader:
             self.fragment_shader.shader = -1
             self.fragment_shader = None
@@ -206,6 +217,7 @@ cdef class Shader:
         self._current_vertex_format = None
         self.program = cgl.glCreateProgram()
         self.fs = self.fs
+        self.gs = self.gs
         self.vs = self.vs
 
     cdef void use(self):
@@ -541,6 +553,7 @@ cdef class Shader:
 
     cdef int build(self) except -1:
         self.build_vertex()
+        self.build_geometry()
         self.build_fragment()
         return 0
 
@@ -553,6 +566,23 @@ cdef class Shader:
         if self.vertex_shader is not None:
             cgl.glAttachShader(self.program, self.vertex_shader.shader)
             log_gl_error('Shader.build_vertex-glAttachShader')
+        if link:
+            self.link_program()
+        return 0
+    
+    # NEW
+    cdef int build_geometry(self, int link=1) except -1:
+        # if self.geos_src is None:
+        #    return 0
+        print("--------------------------------------------------------- geo!")
+        if self.geometry_shader is not None:
+            cgl.glDetachShader(self.program, self.geometry_shader.shader)
+            log_gl_error('Shader.build_geometry-glDetachShader')
+            self.geometry_shader = None
+        self.geometry_shader = self.compile_shader(self.geos_src, GL_GEOMETRY_SHADER)
+        if self.geometry_shader is not None:
+            cgl.glAttachShader(self.program, self.geometry_shader.shader)
+            log_gl_error('Shader.build_geometry-glAttachShader')
         if link:
             self.link_program()
         return 0
@@ -570,6 +600,7 @@ cdef class Shader:
             self.link_program()
 
     cdef int link_program(self) except -1:
+        # NEW: TODO: ADD GEOMETRY LINK
         if self.vertex_shader is None or self.fragment_shader is None:
             return 0
 
@@ -600,7 +631,7 @@ cdef class Shader:
         cdef str ctype, cacheid
         cdef bytes b_source = source.encode('utf-8')
 
-        ctype = 'vertex' if shadertype == GL_VERTEX_SHADER else 'fragment'
+        ctype = 'vertex' if shadertype == GL_VERTEX_SHADER else ('geometry' if shadertype == GL_GEOMETRY_SHADER else 'fragment')
 
         # try to check if the shader exist in the Cache first
         cacheid = '%s|%s' % (ctype, source)
@@ -662,9 +693,11 @@ cdef class Shader:
         self._source = source
         if source is None:
             self.vs = None
+            self.gs = None
             self.fs = None
             return
         self.vert_src = ""
+        self.geos_src = ""
         self.frag_src = ""
         glsl_source = "\n"
         Logger.info('Shader: Read <{}>'.format(self._source))
@@ -676,10 +709,14 @@ cdef class Shader:
             if lines[0].lower().startswith("vertex"):
                 _vs = '\n'.join(lines[1:])
                 self.vert_src = _vs.replace('$HEADER$', header_vs)
+            if lines[0].lower().startswith("geometry"):
+                _gs = '\n'.join(lines[1:])
+                self.geos_src = _gs.replace('$HEADER$', header_gs)
             if lines[0].lower().startswith("fragment"):
                 _fs = '\n'.join(lines[1:])
                 self.frag_src = _fs.replace('$HEADER$', header_fs)
         self.build_vertex(0)
+        self.build_geometry(0)
         self.build_fragment(0)
         self.link_program()
 
@@ -699,6 +736,24 @@ cdef class Shader:
         source = source.replace('$HEADER$', header_vs)
         self.vert_src = source
         self.build_vertex()
+
+    @property
+    def gs(self):
+        '''Geometry shader source code.
+
+        If you set a new geometry shader code source, it will be automatically
+        compiled and will replace the current geometry shader.
+        '''
+        return self.geos_src
+
+    @gs.setter
+    def gs(self, object source):
+        if source is not None:
+            # source = default_gs
+            source = source.replace('$HEADER$', header_gs)
+            self.geos_src = source
+            self.build_geometry()
+
 
     @property
     def fs(self):

@@ -60,8 +60,8 @@
 #		if __APPLE__
 #			include "common_subset.h"
 #		else
-#			include <GLES2/gl2.h>
-#			include <GLES2/gl2ext.h>
+#			include <GLES2/gl32.h>
+#			include <GLES2/gl32ext.h>
 #		endif
 #	else
 #		ifdef __APPLE__

@@ -17,9 +17,11 @@ cdef class Shader:
     cdef VertexFormat _current_vertex_format
     cdef GLint program
     cdef ShaderSource vertex_shader
+    cdef ShaderSource geometry_shader
     cdef ShaderSource fragment_shader
     cdef object _source
     cdef object vert_src
+    cdef object geos_src
     cdef object frag_src
     cdef dict uniform_locations
     cdef dict uniform_values
@@ -32,6 +34,7 @@ cdef class Shader:
     cdef int get_uniform_loc(self, str name) except *
     cdef int build(self) except -1
     cdef int build_vertex(self, int link=*) except -1
+    cdef int build_geometry(self, int link=*) except -1
     cdef int build_fragment(self, int link=*) except -1
     cdef int link_program(self) except -1
     cdef int is_linked(self)

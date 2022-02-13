@@ -29,7 +29,7 @@ gl = open("/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/" +
           "OpenGL.framework/Versions/A/Headers/gl.h", 'r')
 glext = open("/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/" +
              "OpenGL.framework/Versions/A/Headers/glext.h", 'r')
-gles = open("gl2.h", 'r')
+gles = open("gl32.h", 'r')
 
 
 def add_defines_to_set(header):

@@ -105,8 +105,9 @@ cdef class Context:
         if shader.program == 0:
             return
         cdef int vs_id = -1
+        cdef int gs_id = -1
         cdef int fs_id = -1
-        self.lr_shader.append((shader.program, vs_id, fs_id))
+        self.lr_shader.append((shader.program, vs_id, gs_id, fs_id))
 
     cdef void dealloc_shader_source(self, int shader):
         cdef array arr
@@ -318,9 +319,11 @@ cdef class Context:
             del self.lr_shadersource[:]
         if len(self.lr_shader):
             Logger.trace('Context: releasing %d shaders' % len(self.lr_shader))
-            for program, vs_id, fs_id in self.lr_shader:
+            for program, vs_id, gs_id, fs_id in self.lr_shader:
                 if vs_id != -1:
                     cgl.glDetachShader(program, vs_id)
+                if gs_id != -1:
+                    cgl.glDetachShader(program, gs_id)
                 if fs_id != -1:
                     cgl.glDetachShader(program, fs_id)
                 cgl.glDeleteProgram(program)

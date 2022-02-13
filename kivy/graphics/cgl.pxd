@@ -185,6 +185,7 @@ cdef extern from "gl_redirect.h":
     int GL_UNSIGNED_SHORT_5_6_5
 
     int GL_FRAGMENT_SHADER
+    int GL_GEOMETRY_SHADER
     int GL_VERTEX_SHADER
     int GL_MAX_VERTEX_ATTRIBS
     int GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS

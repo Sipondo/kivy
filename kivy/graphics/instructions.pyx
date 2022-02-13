@@ -774,6 +774,7 @@ cdef class RenderContext(Canvas):
     '''The render context stores all the necessary information for drawing, i.e.:
 
     - The vertex shader
+    - The geometry shader
     - The fragment shader
     - The default texture
     - The state stack (color, texture, matrix...)
@@ -787,8 +788,9 @@ cdef class RenderContext(Canvas):
     def __init__(self, *args, **kwargs):
         Canvas.__init__(self, **kwargs)
         vs_src = kwargs.get('vs', None)
+        gs_src = kwargs.get('gs', None)
         fs_src = kwargs.get('fs', None)
-        self._shader = Shader(vs_src, fs_src)
+        self._shader = Shader(vs_src, gs_src, fs_src)
 
         # load default texture image
         filename = join(kivy_shader_dir, 'default.png')

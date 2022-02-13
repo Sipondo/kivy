@@ -85,7 +85,7 @@
 #error gl.h included before glew.h
 #endif
 #if defined(__gl2_h_)
-#error gl2.h included before glew.h
+#error gl32.h included before glew.h
 #endif
 #if defined(__gltypes_h_)
 #error gltypes.h included before glew.h
