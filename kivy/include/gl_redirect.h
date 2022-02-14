@@ -61,7 +61,7 @@
 #			include "common_subset.h"
 #		else
 #			include <GLES3/gl32.h>
-#			include <GLES3/gl32ext.h>
+#			include <GLES3/gl3ext.h>
 #		endif
 #	else
 #		ifdef __APPLE__
