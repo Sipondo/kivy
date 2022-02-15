@@ -753,6 +753,9 @@ cdef class Shader:
             # source = default_gs
             source = source.replace('$HEADER$', header_gs)
             self.geos_src = source
+            # TODO: replace with something more stable
+            self.vert_src = None
+            self.frag_src = None
             self.build_geometry()
 
 
