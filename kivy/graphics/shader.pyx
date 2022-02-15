@@ -566,8 +566,8 @@ cdef class Shader:
         if self.vertex_shader is not None:
             cgl.glAttachShader(self.program, self.vertex_shader.shader)
             log_gl_error('Shader.build_vertex-glAttachShader')
-        if link:
-            self.link_program()
+        # if link:
+        #     self.link_program()
         return 0
     
     # NEW
@@ -583,8 +583,8 @@ cdef class Shader:
         if self.geometry_shader is not None:
             cgl.glAttachShader(self.program, self.geometry_shader.shader)
             log_gl_error('Shader.build_geometry-glAttachShader')
-        if link:
-            self.link_program()
+        # if link:
+        #     self.link_program()
         return 0
 
     cdef int build_fragment(self, int link=1) except -1:
