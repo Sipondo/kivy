@@ -568,7 +568,7 @@ cdef class Shader:
         if self.vertex_shader is not None:
             cgl.glAttachShader(self.program, self.vertex_shader.shader)
             log_gl_error('Shader.build_vertex-glAttachShader')
-        if link and self._built_geo == 1:
+        if link:
             self.link_program()
         return 0
     
@@ -585,7 +585,7 @@ cdef class Shader:
         if self.geometry_shader is not None:
             cgl.glAttachShader(self.program, self.geometry_shader.shader)
             log_gl_error('Shader.build_geometry-glAttachShader')
-        if link and self._built_geo == 1:
+        if link:
             self.link_program()
         return 0
 
@@ -601,12 +601,15 @@ cdef class Shader:
         if self.fragment_shader is not None:
             cgl.glAttachShader(self.program, self.fragment_shader.shader)
             log_gl_error('Shader.build_fragment-glAttachShader')
-        if link and self._built_geo == 1:
+        if link:
             self.link_program()
 
     cdef int link_program(self) except -1:
         # NEW: TODO: ADD GEOMETRY LINK
         if self.vertex_shader is None or self.fragment_shader is None:
+            return 0
+        
+        if self._built_geo != 1:
             return 0
 
         # XXX to ensure that shader is ok, read error state right now.
