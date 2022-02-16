@@ -20,6 +20,7 @@ cdef class Shader:
     cdef ShaderSource geometry_shader
     cdef ShaderSource fragment_shader
     cdef object _source
+    cdef int _built_geo
     cdef object vert_src
     cdef object geos_src
     cdef object frag_src

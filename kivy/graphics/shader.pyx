@@ -180,6 +180,7 @@ cdef class Shader:
         self.fragment_shader = None
         self.uniform_locations = dict()
         self.uniform_values = dict()
+        self._built_geo = 1
 
     def __init__(self, str vs=None, str gs=None, str fs=None, str source=None):
         self.program = cgl.glCreateProgram()
@@ -567,7 +568,7 @@ cdef class Shader:
         if self.vertex_shader is not None:
             cgl.glAttachShader(self.program, self.vertex_shader.shader)
             log_gl_error('Shader.build_vertex-glAttachShader')
-        if link:
+        if link and self._built_geo == 1:
             self.link_program()
         return 0
     
@@ -584,11 +585,14 @@ cdef class Shader:
         if self.geometry_shader is not None:
             cgl.glAttachShader(self.program, self.geometry_shader.shader)
             log_gl_error('Shader.build_geometry-glAttachShader')
-        if link:
+        if link and self._built_geo == 1:
             self.link_program()
         return 0
 
     cdef int build_fragment(self, int link=1) except -1:
+        # Geo shader hack
+        self._built_geo = 1
+
         if self.fragment_shader is not None:
             cgl.glDetachShader(self.program, self.fragment_shader.shader)
             log_gl_error('Shader.build_fragment-glDetachShader')
@@ -597,7 +601,7 @@ cdef class Shader:
         if self.fragment_shader is not None:
             cgl.glAttachShader(self.program, self.fragment_shader.shader)
             log_gl_error('Shader.build_fragment-glAttachShader')
-        if link:
+        if link and self._built_geo == 1:
             self.link_program()
 
     cdef int link_program(self) except -1:
@@ -753,7 +757,8 @@ cdef class Shader:
             # source = default_gs
             source = source.replace('$HEADER$', header_gs)
             self.geos_src = source
-            self.build_geometry(0)
+            self._built_geo = 0
+            self.build_geometry()
 
 
     @property
@@ -771,7 +776,7 @@ cdef class Shader:
             source = default_fs
         source = source.replace('$HEADER$', header_fs)
         self.frag_src = source
-        self.build_fragment(0)
+        self.build_fragment()
 
     @property
     def success(self):
