@@ -180,7 +180,6 @@ cdef class Shader:
         self.fragment_shader = None
         self.uniform_locations = dict()
         self.uniform_values = dict()
-        self._built_geo = 0
 
     def __init__(self, str vs=None, str gs=None, str fs=None, str source=None):
         self.program = cgl.glCreateProgram()
@@ -590,9 +589,6 @@ cdef class Shader:
         return 0
 
     cdef int build_fragment(self, int link=1) except -1:
-        # Geo shader hack
-        self._built_geo = 1
-
         if self.fragment_shader is not None:
             cgl.glDetachShader(self.program, self.fragment_shader.shader)
             log_gl_error('Shader.build_fragment-glDetachShader')
@@ -605,12 +601,8 @@ cdef class Shader:
             self.link_program()
 
     cdef int link_program(self) except -1:
-        # NEW: TODO: ADD GEOMETRY LINK
         if self.vertex_shader is None or self.fragment_shader is None:
             return 0
-        
-        # if self._built_geo != 1:
-        #     return 0
 
         # XXX to ensure that shader is ok, read error state right now.
         cgl.glGetError()
@@ -757,10 +749,9 @@ cdef class Shader:
     @gs.setter
     def gs(self, object source):
         if source is not None:
-            # source = default_gs
+            # source = default_gs - we don't want to default to using a geo shader
             source = source.replace('$HEADER$', header_gs)
             self.geos_src = source
-            self._built_geo = 0
             self.build_geometry()
 
 
