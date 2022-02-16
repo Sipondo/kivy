@@ -609,8 +609,8 @@ cdef class Shader:
         if self.vertex_shader is None or self.fragment_shader is None:
             return 0
         
-        if self._built_geo != 1:
-            return 0
+        # if self._built_geo != 1:
+        #     return 0
 
         # XXX to ensure that shader is ok, read error state right now.
         cgl.glGetError()
