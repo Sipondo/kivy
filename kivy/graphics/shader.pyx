@@ -180,7 +180,7 @@ cdef class Shader:
         self.fragment_shader = None
         self.uniform_locations = dict()
         self.uniform_values = dict()
-        self._built_geo = 1
+        self._built_geo = 0
 
     def __init__(self, str vs=None, str gs=None, str fs=None, str source=None):
         self.program = cgl.glCreateProgram()
