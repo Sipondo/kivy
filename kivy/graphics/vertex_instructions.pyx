@@ -330,6 +330,108 @@ cdef class StripMesh(VertexInstruction):
         self.li += icount
         return 1
 
+cdef class MeshView(VertexInstruction):
+    '''A view to a mesh.
+    Works similarly to mesh but can't change its buffer contents.
+    '''
+
+    def __init__(self, **kwargs):
+        self.host_mesh = kwargs.get('host_mesh')
+        VertexInstruction.__init__(self, **kwargs)
+        self.mode = kwargs.get('mode') or 'points'
+
+        self.batch = self.host_mesh.gbatch
+
+    cdef void build_triangle_fan(self, float *vertices, int vcount, int icount):
+        return
+
+    cdef void build(self):
+        return
+
+    @property
+    def vertex_format(self):
+        return self.host_mesh.vertex_format
+
+    @vertex_format.setter
+    def vertex_format(self, value):
+        pass
+
+    @property
+    def is_built(self):
+        return self.host_mesh.is_built
+
+    @is_built.setter
+    def is_built(self, value):
+        pass
+
+    # @property
+    # def batch(self):
+    #     return self.host_mesh.batch
+
+    # @batch.setter
+    # def batch(self, value):
+    #     pass
+
+    @property
+    def vcount(self):
+        return self.host_mesh.vcount
+
+    @vcount.setter
+    def vcount(self, value):
+        pass
+
+    @property
+    def icount(self):
+        return self.host_mesh.icount
+
+    @icount.setter
+    def icount(self, value):
+        pass
+
+    @property
+    def vertices(self):
+        '''List of x, y, u, v coordinates used to construct the Mesh. Right now,
+        the Mesh instruction doesn't allow you to change the format of the
+        vertices, which means it's only x, y + one texture coordinate.
+        '''
+        return self.host_mesh.vertices
+
+    @vertices.setter
+    def vertices(self, value):
+        pass
+
+    @property
+    def indices(self):
+        '''Vertex indices used to specify the order when drawing the
+        mesh.
+        '''
+        return self.host_mesh.indices
+
+    @indices.setter
+    def indices(self, value):
+        pass
+
+    @property
+    def mode(self):
+        '''VBO Mode used for drawing vertices/indices. Can be one of 'points',
+        'line_strip', 'line_loop', 'lines', 'triangles', 'triangle_strip' or
+        'triangle_fan'.
+        '''
+        return self.batch.get_mode()
+
+    @mode.setter
+    def mode(self, mode):
+        self.batch.set_mode(mode)
+    
+    @property
+    def gbatch(self):
+        return self.batch
+    
+    @gbatch.setter
+    def gbatch(self, batch):
+        self.batch = batch
+
+
 
 cdef class Mesh(VertexInstruction):
     '''A 2d mesh.
@@ -504,6 +606,14 @@ cdef class Mesh(VertexInstruction):
     @mode.setter
     def mode(self, mode):
         self.batch.set_mode(mode)
+    
+    @property
+    def gbatch(self):
+        return self.batch
+    
+    @gbatch.setter
+    def gbatch(self, batch):
+        self.batch = batch
 
 
 

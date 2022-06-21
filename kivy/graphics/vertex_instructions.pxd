@@ -32,3 +32,8 @@ cdef class Mesh(VertexInstruction):
 
     cdef void build_triangle_fan(self, float *vertices, int vcount, int icount)
     cdef void build(self)
+
+cdef class MeshView(VertexInstruction):
+    cdef object host_mesh
+    cdef void build_triangle_fan(self, float *vertices, int vcount, int icount)
+    cdef void build(self)
