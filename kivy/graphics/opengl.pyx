@@ -326,6 +326,13 @@ GL_RENDERBUFFER_BINDING = cgldef.GL_RENDERBUFFER_BINDING
 GL_MAX_RENDERBUFFER_SIZE = cgldef.GL_MAX_RENDERBUFFER_SIZE
 GL_INVALID_FRAMEBUFFER_OPERATION = cgldef.GL_INVALID_FRAMEBUFFER_OPERATION
 
+GL_RASTERIZER_DISCARD = cgldef.GL_RASTERIZER_DISCARD
+GL_INTERLEAVED_ATTRIBS = cgldef.GL_INTERLEAVED_ATTRIBS
+GL_STATIC_READ = cgldef.GL_STATIC_READ
+GL_TRANSFORM_FEEDBACK_BUFFER = cgldef.GL_TRANSFORM_FEEDBACK_BUFFER
+GL_SHADER_STORAGE_BUFFER = cgldef.GL_SHADER_STORAGE_BUFFER
+GL_MAP_READ_BIT = cgldef.GL_MAP_READ_BIT
+
 # not working with GL standard include
 GL_SHADER_BINARY_FORMATS = cgldef.GL_SHADER_BINARY_FORMATS
 GL_RGB565 = cgldef.GL_RGB565
@@ -434,6 +441,46 @@ def glAttachShader(GLuint program, GLuint shader):
     <http://www.khronos.org/opengles/sdk/docs/man/xhtml/glAttachShader.xml>`_
     '''
     cgl.glAttachShader(program, shader)
+
+
+def glBeginTransformFeedback(GLenum primitiveMode):
+    cgl.glBeginTransformFeedback(primitiveMode)
+
+def glEndTransformFeedback():
+    cgl.glEndTransformFeedback()
+
+def glTransformFeedbackVaryings(GLuint program, GLsizei count, bytes varyings, GLenum bufferMode):
+    cgl.glTransformFeedbackVaryings(program, count, <GLchar **><char *>varyings, bufferMode)
+
+def glGetTransformFeedbackVarying(GLuint program, GLuint index, GLsizei bufSize, GLsizei length, GLsizei size, GLenum type, GLchar *name):
+    cgl.glGetTransformFeedbackVarying(program, index, bufSize, &length, &size, &type, name)
+
+def glBindBufferBase(GLenum target, GLuint index, GLuint buffer):
+    cgl.glBindBufferBase(target, index, buffer)
+
+
+cdef convert_to_python(double *ptr, int n):
+    cdef int i
+    lst=[]
+    for i in range(n):
+        lst.append(ptr[i])
+    return lst
+
+def glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access):
+    raise Exception()
+    print("Mapbufferrange! 1")
+    cdef double* a = <double*>cgl.glMapBufferRange(target, offset, length, access)
+
+    l = convert_to_python(a, 5)
+
+    print("Mapbufferrange! 2")
+    print(l)
+    # return cgl.glMapBufferRange(target, offset, length, access)
+    # return cgl.glMapBufferRange(target, offset, length, access)
+
+def glUnmapBuffer(GLenum target):
+    return cgl.glUnmapBuffer(target)
+
 
 def glBindAttribLocation(GLuint program, GLuint index, bytes name):
     '''See: `glBindAttribLocation() on Kronos website

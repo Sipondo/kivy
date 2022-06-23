@@ -127,6 +127,22 @@ cdef void log_cgl_funcs() except *:
         Logger.debug('GL: glActiveTexture is not available')
     if cgl.glAttachShader == NULL:
         Logger.debug('GL: glAttachShader is not available')
+    
+    if cgl.glBeginTransformFeedback == NULL:
+        Logger.debug('GL: glBeginTransformFeedback is not available')
+    if cgl.glEndTransformFeedback == NULL:
+        Logger.debug('GL: glEndTransformFeedback is not available')
+    if cgl.glTransformFeedbackVaryings == NULL:
+        Logger.debug('GL: glTransformFeedbackVaryings is not available')
+    if cgl.glGetTransformFeedbackVarying == NULL:
+        Logger.debug('GL: glGetTransformFeedbackVarying is not available')
+    if cgl.glBindBufferBase == NULL:
+        Logger.debug('GL: glBindBufferBase is not available')
+    if cgl.glMapBufferRange == NULL:
+        Logger.debug('GL: glMapBufferRange is not available')
+    if cgl.glUnmapBuffer == NULL:
+        Logger.debug('GL: glUnmapBuffer is not available')
+
     if cgl.glBindAttribLocation == NULL:
         Logger.debug('GL: glBindAttribLocation is not available')
     if cgl.glBindBuffer == NULL:

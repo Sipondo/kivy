@@ -379,6 +379,13 @@ cdef extern from "gl_redirect.h":
 
     int GL_FRAMEBUFFER_UNDEFINED_OES
 
+    int GL_INTERLEAVED_ATTRIBS
+    int GL_RASTERIZER_DISCARD
+    int GL_STATIC_READ
+    int GL_TRANSFORM_FEEDBACK_BUFFER
+    int GL_SHADER_STORAGE_BUFFER
+    int GL_MAP_READ_BIT
+
 ctypedef const GLubyte* (__stdcall *GLGETSTRINGPTR)(GLenum) nogil
 ctypedef GLboolean (__stdcall *GLISBUFFERPTR)(GLuint buffer) nogil
 ctypedef GLboolean (__stdcall *GLISENABLEDPTR)(GLenum cap) nogil
@@ -395,6 +402,15 @@ ctypedef GLuint (__stdcall *GLCREATEPROGRAMPTR)() nogil
 ctypedef GLuint (__stdcall *GLCREATESHADERPTR)(GLenum) nogil
 ctypedef void (__stdcall *GLACTIVETEXTUREPTR)(GLenum) nogil
 ctypedef void (__stdcall *GLATTACHSHADERPTR)(GLuint, GLuint) nogil
+
+ctypedef void (__stdcall *GLBEGINTRANSFORMFEEDBACK)(GLenum) nogil
+ctypedef void (__stdcall *GLENDTRANSFORMFEEDBACK)() nogil
+ctypedef void (__stdcall *GLTRANSFORMFEEDBACKVARYINGS)(GLuint, GLsizei, const GLchar *const *varyings, GLenum)
+ctypedef void (__stdcall *GLGETTRANSFORMFEEDBACKVARYING)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name)
+ctypedef void (__stdcall *GLBINDBUFFERBASE)(GLenum, GLuint, GLuint)
+ctypedef void* (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
+ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
+
 ctypedef void (__stdcall *GLBINDATTRIBLOCATIONPTR)(GLuint, GLuint, const char *) nogil
 ctypedef void (__stdcall *GLBINDBUFFERPTR)(GLenum, GLuint) nogil
 ctypedef void (__stdcall *GLBINDFRAMEBUFFERPTR)(GLenum, GLuint) nogil
@@ -526,6 +542,15 @@ ctypedef struct GLES2_Context:
     GLuint (__stdcall *glCreateShader)(GLenum) nogil
     void (__stdcall *glActiveTexture)(GLenum) nogil
     void (__stdcall *glAttachShader)(GLuint, GLuint) nogil
+
+    void (__stdcall *glBeginTransformFeedback)(GLenum) nogil
+    void (__stdcall *glEndTransformFeedback)() nogil
+    void (__stdcall *glTransformFeedbackVaryings)(GLuint, GLsizei, const GLchar *const *varyings, GLenum) nogil
+    void (__stdcall *glGetTransformFeedbackVarying)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name) nogil
+    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint)
+    void* (__stdcall *glMapBufferRange)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
+    GLboolean (__stdcall *glUnmapBuffer)(GLenum)
+
     void (__stdcall *glBindAttribLocation)(GLuint, GLuint, const char *) nogil
     void (__stdcall *glBindBuffer)(GLenum, GLuint) nogil
     void (__stdcall *glBindFramebuffer)(GLenum, GLuint) nogil

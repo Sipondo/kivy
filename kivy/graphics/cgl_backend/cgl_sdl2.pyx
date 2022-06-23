@@ -23,6 +23,15 @@ def init_backend():
         # sdl2 window must have been created by now
         cgl.glActiveTexture = <GLACTIVETEXTUREPTR>SDL_GL_GetProcAddress("glActiveTexture")
         cgl.glAttachShader = <GLATTACHSHADERPTR>SDL_GL_GetProcAddress("glAttachShader")
+
+        cgl.glBeginTransformFeedback = <GLBEGINTRANSFORMFEEDBACK>SDL_GL_GetProcAddress("glBeginTransformFeedback")
+        cgl.glEndTransformFeedback = <GLENDTRANSFORMFEEDBACK>SDL_GL_GetProcAddress("glEndTransformFeedback")
+        cgl.glTransformFeedbackVaryings = <GLTRANSFORMFEEDBACKVARYINGS>SDL_GL_GetProcAddress("glTransformFeedbackVaryings")
+        cgl.glGetTransformFeedbackVarying = <GLGETTRANSFORMFEEDBACKVARYING>SDL_GL_GetProcAddress("glGetTransformFeedbackVarying")
+        cgl.glBindBufferBase = <GLBINDBUFFERBASE>SDL_GL_GetProcAddress("glBindBufferBase")
+        cgl.glMapBufferRange = <GLMAPBUFFERRANGE>SDL_GL_GetProcAddress("glMapBufferRange")
+        cgl.glUnmapBuffer = <GLUNMAPBUFFER>SDL_GL_GetProcAddress("glUnmapBuffer")
+
         cgl.glBindAttribLocation = <GLBINDATTRIBLOCATIONPTR>SDL_GL_GetProcAddress("glBindAttribLocation")
         cgl.glBindBuffer = <GLBINDBUFFERPTR>SDL_GL_GetProcAddress("glBindBuffer")
         cgl.glBindFramebuffer = <GLBINDFRAMEBUFFERPTR>SDL_GL_GetProcAddress("glBindFramebuffer")

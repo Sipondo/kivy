@@ -301,6 +301,8 @@ cdef void __stdcall mockViewport(GLint x, GLint y, GLsizei width, GLsizei height
 def init_backend():
     cgl.glActiveTexture = mockActiveTexture
     cgl.glAttachShader = mockAttachShader
+    # cgl.glBeginTransformFeedback = mockBeginTransformFeedback
+    # cgl.glEndTransformFeedback = mockEndTransformFeedback
     cgl.glBindAttribLocation = mockBindAttribLocation
     cgl.glBindBuffer = mockBindBuffer
     cgl.glBindFramebuffer = mockBindFramebuffer

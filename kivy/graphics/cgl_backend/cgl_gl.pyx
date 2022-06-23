@@ -25,6 +25,16 @@ cdef extern from "gl_redirect.h":
     GLuint (__stdcall *glCreateShader)(GLenum) nogil
     void (__stdcall *glActiveTexture)(GLenum) nogil
     void (__stdcall *glAttachShader)(GLuint, GLuint) nogil
+
+    void (__stdcall *glBeginTransformFeedback)(GLenum) nogil
+    void (__stdcall *glEndTransformFeedback)() nogil
+    void (__stdcall *glTransformFeedbackVaryings)(GLuint, GLsizei, const GLchar *const *varyings, GLenum) nogil
+    void (__stdcall *glGetTransformFeedbackVarying)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name) nogil
+    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint)
+    void* (__stdcall *glMapBufferRange)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
+    GLboolean (__stdcall *glUnmapBuffer)(GLenum)
+
+
     void (__stdcall *glBindAttribLocation)(GLuint, GLuint, const char *) nogil
     void (__stdcall *glBindBuffer)(GLenum, GLuint) nogil
     void (__stdcall *glBindFramebuffer)(GLenum, GLuint) nogil
@@ -157,6 +167,15 @@ cpdef link_static():
     ELSE:
         cgl.glActiveTexture = glActiveTexture
         cgl.glAttachShader = glAttachShader
+
+        cgl.glBeginTransformFeedback = glBeginTransformFeedback
+        cgl.glEndTransformFeedback = glEndTransformFeedback
+        cgl.glTransformFeedbackVaryings = glTransformFeedbackVaryings
+        cgl.glGetTransformFeedbackVarying = glGetTransformFeedbackVarying
+        cgl.glBindBufferBase = glBindBufferBase
+        cgl.glMapBufferRange = glMapBufferRange
+        cgl.glUnmapBuffer = glUnmapBuffer
+        
         cgl.glBindAttribLocation = glBindAttribLocation
         cgl.glBindBuffer = glBindBuffer
         cgl.glBindFramebuffer = glBindFramebuffer
