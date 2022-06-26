@@ -435,11 +435,12 @@ cdef class VertexInstruction(Instruction):
         cdef Context ctx
         # cdef Shader shader
         cdef GLuint transform_shader
+        cdef GLuint frag_shader
         cdef int i
-        cdef char* source = """version 320 es
+        cdef char* source = """#version 320 es
 
             #ifdef GL_ES
-            precision highp float;
+            precision mediump float;
             #endif
 
             in float inValue;
@@ -450,8 +451,11 @@ cdef class VertexInstruction(Instruction):
                 outValue = sqrt(inValue);
             }"""
 
-        # cdef Glchar *vertexShaderSrc
+        def print(*t):
+            global print
+            print(cgl.glGetError(), *t)
 
+        print(source)
         print("Building the Transform Feedback shader.")
         transform_shader = cgl.glCreateShader(GL_VERTEX_SHADER)
         cgl.glShaderSource(transform_shader, 1, <const_char_ptr*> &source, NULL)
@@ -459,13 +463,13 @@ cdef class VertexInstruction(Instruction):
         print("Transform Feedback shader has been built and compiled.")
 
         print("Building program.")
-        cdef GLuint transform_program = cgl.glCreateProgram();
-        print("Attaching shader.")
-        cgl.glAttachShader(transform_program, transform_shader);
+        cdef GLuint transform_program = cgl.glCreateProgram()
+        print(f"Attaching shader. Program: {transform_program}")
+        cgl.glAttachShader(transform_program, transform_shader)
         print("Attachment succesful.")
-
+        
         print("Defining varyings")
-        cdef char** feedbackVaryings = [ "outValue" ]
+        cdef GLchar** feedbackVaryings = [ "outValue" ]
         print("Building varyings")
         cgl.glTransformFeedbackVaryings(transform_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
         print("Varyings built!")
@@ -473,11 +477,25 @@ cdef class VertexInstruction(Instruction):
         print("Linking program")
         cgl.glLinkProgram(transform_program)
         print("Program linked!")
+
+        cdef char msg[2048]
+        cdef GLsizei length
+        msg[0] = b'\0'
+        cgl.glGetProgramInfoLog(transform_program, 2048, &length, msg)
+        cdef bytes ret = msg[:length]
+        print(ret.split(b'\0')[0].decode('utf-8'))
+
         cgl.glUseProgram(transform_program)
         print("Program in use!")
 
         print("Generating data!")
         cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+        print(transform_data[0])
+        print(transform_data[1])
+        print(transform_data[2])
+        print(transform_data[3])
+        print(transform_data[4])
 
         print("Building VBO")
         cdef GLuint transform_vbo
@@ -486,9 +504,26 @@ cdef class VertexInstruction(Instruction):
         print("Binding VBO")
         cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
 
-        BUFSIZE = 5 * 32
+        BUFSIZE = 5 * 4
         print("Upload data to buffer")
-        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_DRAW)
+        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
+
+        # print("Checking buffer")
+        # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_ARRAY_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
+        # cgl.glUnmapBuffer(GL_ARRAY_BUFFER)
+        
+        # transform_data[1] = 10
+        # print(transform_result[0])
+        # print(transform_result[1])
+        # print(transform_result[2])
+        # print(transform_result[3])
+        # print(transform_result[4])
+        
+        # print(transform_data[0])
+        # print(transform_data[1])
+        # print(transform_data[2])
+        # print(transform_data[3])
+        # print(transform_data[4])
 
         print("Building vertex pointer")
         cdef GLint inputAttrib = cgl.glGetAttribLocation(transform_program, "inValue")
@@ -497,19 +532,20 @@ cdef class VertexInstruction(Instruction):
         cgl.glEnableVertexAttribArray(inputAttrib)
 
         print("Set vertex pointer")
-        cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0)
+        cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
 
         print("Build receiving VBO")
         cdef GLuint tbo
         cgl.glGenBuffers(1, &tbo)
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, tbo)
-        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, NULL, GL_STATIC_READ)
-
-        print("Disabling rasterizer")
-        cgl.glEnable(GL_RASTERIZER_DISCARD)
+        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
+        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_STATIC_READ)
 
         print("Binding receiving buffer")
         cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
+
+
+        print("Disabling rasterizer")
+        cgl.glEnable(GL_RASTERIZER_DISCARD)
 
         print("Going to activate Transform Feedback.")
         cgl.glBeginTransformFeedback(GL_POINTS)
@@ -522,6 +558,9 @@ cdef class VertexInstruction(Instruction):
         cgl.glEndTransformFeedback()
         print("Transform Feedback ended.")
         
+        print("Disabling Rasterizer")
+        cgl.glDisable(GL_RASTERIZER_DISCARD)
+
         # cgl.glDisable(GL_RASTERIZER_DISCARD)
         print("Flushing")
         cgl.glFlush()
@@ -533,32 +572,31 @@ cdef class VertexInstruction(Instruction):
 
         # cdef GLfloat* buffercontent = <GLfloat*>(cgl.glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 40, GL_MAP_READ_BIT))
         # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 80, GL_MAP_READ_BIT)
-        cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
+        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
         # cdef double* transform_result = <double*>malloc(8*16)
         print("Map Buffer Initialised")
         # l = convert_to_python(a, 5)
 
-        print(transform_result[0])
-        print(transform_result[1])
-        print(transform_result[2])
-        print(transform_result[3])
-        print(transform_result[4])
+        print("Unmapping copy")
+        cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+
+        print("Sqrt of 1 is:", transform_result[0])
+        print("Sqrt of 2 is:", transform_result[1])
+        print("Sqrt of 3 is:", transform_result[2])
+        print("Sqrt of 4 is:", transform_result[3])
+        print("Sqrt of 5 is:", transform_result[4])
         print("Mapbufferrange! 2")
         # print(l)
         # for i in range(5):
         #     printf("%X", *(buffercontent+i));
         # print(buffercontent)
-        print("Unmapping copy")
-        cgl.glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
-        
+
         
         # void glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
         # GLboolean glUnmapBuffer(GLenum target);
 
         # ctypedef void (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
         # ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
-        print("Disabling Rasterizer")
-        cgl.glDisable(GL_RASTERIZER_DISCARD)
         print("Resetting context")
         reset_gl_context()
         return 0
