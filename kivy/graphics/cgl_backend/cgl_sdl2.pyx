@@ -27,7 +27,7 @@ def init_backend():
         cgl.glBeginTransformFeedback = <GLBEGINTRANSFORMFEEDBACK>SDL_GL_GetProcAddress("glBeginTransformFeedback")
         cgl.glEndTransformFeedback = <GLENDTRANSFORMFEEDBACK>SDL_GL_GetProcAddress("glEndTransformFeedback")
         cgl.glTransformFeedbackVaryings = <GLTRANSFORMFEEDBACKVARYINGS>SDL_GL_GetProcAddress("glTransformFeedbackVaryings")
-        cgl.glGetTransformFeedbackVarying = <GLGETTRANSFORMFEEDBACKVARYING>SDL_GL_GetProcAddress("glGetTransformFeedbackVarying")
+        # cgl.glGetTransformFeedbackVarying = <GLGETTRANSFORMFEEDBACKVARYING>SDL_GL_GetProcAddress("glGetTransformFeedbackVarying")
         cgl.glBindBufferBase = <GLBINDBUFFERBASE>SDL_GL_GetProcAddress("glBindBufferBase")
         cgl.glMapBufferRange = <GLMAPBUFFERRANGE>SDL_GL_GetProcAddress("glMapBufferRange")
         cgl.glUnmapBuffer = <GLUNMAPBUFFER>SDL_GL_GetProcAddress("glUnmapBuffer")
