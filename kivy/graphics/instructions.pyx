@@ -452,10 +452,15 @@ cdef class VertexInstruction(Instruction):
             }"""
 
         cdef char* fragsource = """#version 320 es
+
+            #ifdef GL_ES
             precision mediump float;
-            "out vec4 fragColor;
+            #endif
+
+            out vec4 fragColor;
+
             void main() {
-              fragColor = vec4(1.0,1.0,1.0,1.0)
+              fragColor = vec4(1.0,1.0,1.0,1.0);
             }"""
 
         print(cgl.glGetError(), source)
@@ -466,9 +471,9 @@ cdef class VertexInstruction(Instruction):
         print(cgl.glGetError(), "Transform Feedback Vertex shader has been built and compiled.")
 
         print(cgl.glGetError(), "Building the Transform Feedback Fragment shader.")
-        fragment_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
-        cgl.glShaderSource(fragment_shader, 1, <const_char_ptr*> &fragsource, NULL)
-        cgl.glCompileShader(fragment_shader)
+        f_transform_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
+        cgl.glShaderSource(f_transform_shader, 1, <const_char_ptr*> &fragsource, NULL)
+        cgl.glCompileShader(f_transform_shader)
         print(cgl.glGetError(), "Transform Feedback Fragment shader has been built and compiled.")
 
         print(cgl.glGetError(), "Building program.")
@@ -476,7 +481,7 @@ cdef class VertexInstruction(Instruction):
         print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
         cgl.glAttachShader(transform_program, transform_shader)
         print(cgl.glGetError(), "Vertex attachment succesful.")
-        cgl.glAttachShader(transform_program, frag_shader)
+        cgl.glAttachShader(transform_program, f_transform_shader)
         print(cgl.glGetError(), "Fragment attachment succesful.")
         
         print(cgl.glGetError(), "Defining varyings")
