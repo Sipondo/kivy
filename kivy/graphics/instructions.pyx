@@ -475,8 +475,9 @@ cdef class VertexInstruction(Instruction):
         cdef GLuint transform_program = cgl.glCreateProgram()
         print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
         cgl.glAttachShader(transform_program, transform_shader)
+        print(cgl.glGetError(), "Vertex attachment succesful.")
         cgl.glAttachShader(transform_program, frag_shader)
-        print(cgl.glGetError(), "Attachment succesful.")
+        print(cgl.glGetError(), "Fragment attachment succesful.")
         
         print(cgl.glGetError(), "Defining varyings")
         cdef GLchar** feedbackVaryings = [ "outValue" ]
