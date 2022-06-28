@@ -127,3 +127,20 @@ cdef class RenderContext(Canvas):
     cdef void reload(self) except *
 
 cdef RenderContext getActiveContext()
+
+cdef class TransformFeedback(ObjectWithUid):
+    cdef Shader _shader
+    cdef dict state_stacks
+    
+    cdef void set_state(self, str name, value, int apply_now=?)
+    cdef get_state(self, str name)
+    cdef int set_states(self, dict states) except -1
+    cdef int push_state(self, str name) except -1
+    cdef int push_states(self, list names) except -1
+    cdef int pop_state(self, str name) except -1
+    cdef int pop_states(self, list names) except -1
+
+    # cdef int enter(self) except -1
+    # cdef int leave(self) except -1
+
+    # cdef void reload(self) except *
