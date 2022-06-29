@@ -19,6 +19,7 @@ cdef class Shader:
     cdef ShaderSource vertex_shader
     cdef ShaderSource geometry_shader
     cdef ShaderSource fragment_shader
+    cdef int _is_transform_feedback
     cdef object _source
     cdef object vert_src
     cdef object geos_src

@@ -16,7 +16,7 @@ out float outValue;
 void main()
 {
     for(int i=0;i<3;i++){
-        outValue=gs_in[0].geoValue+float(i);
+        outValue=gs_in[0].geoValue+0.1*float(i);
         EmitVertex();
     }
     

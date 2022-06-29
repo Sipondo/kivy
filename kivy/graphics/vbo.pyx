@@ -134,6 +134,19 @@ cdef class VBO:
         return '<VBO at %x id=%r count=%d size=%d>' % (
                 id(self), self.id if self.flags & V_HAVEID else None,
                 self.data.count(), self.data.size())
+    
+    @property
+    def gid(self):
+        return self.id
+
+    @property
+    def gsize(self):
+        return self.vbo_size
+    
+    @property
+    def gvertex_format(self):
+        return self.vertex_format
+
 
 cdef class VertexBatch:
     def __init__(self, **kwargs):
@@ -264,3 +277,20 @@ cdef class VertexBatch:
                 id(self), self.id if self.flags & V_HAVEID else None,
                 self.elements.count(), self.elements.size(), self.get_mode(),
                 id(self.vbo))
+
+    @property
+    def gvbo(self):
+        return self.vbo
+    
+    @property
+    def gcount(self):
+        return self.elements.count()
+
+    @property
+    def gid(self):
+        return self.id
+
+    
+    @property
+    def gelements(self):
+        return self.elements

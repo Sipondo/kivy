@@ -181,7 +181,7 @@ cdef class Shader:
         self.uniform_locations = dict()
         self.uniform_values = dict()
 
-    def __init__(self, str vs=None, str gs=None, str fs=None, str source=None):
+    def __init__(self, str vs=None, str gs=None, str fs=None, str source=None, int is_transform_feedback = 0):
         self.program = cgl.glCreateProgram()
         if source:
             self.source = source
@@ -190,11 +190,24 @@ cdef class Shader:
             self.fs = fs
             self.gs = gs
             self.vs = vs
+        
+        self._is_transform_feedback = is_transform_feedback
+        if not self._is_transform_feedback:
+            return
+        
+        print(cgl.glGetError(), "Defining varyings")
+        cdef GLchar** feedbackVaryings = [ "outValue" ]
+        print(cgl.glGetError(), "Building varyings")
+        cgl.glTransformFeedbackVaryings(self.program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
+        print(cgl.glGetError(), "Varyings built!")
+        self.link_program()
 
     def __dealloc__(self):
         get_context().dealloc_shader(self)
 
     cdef void reload(self):
+        if self._is_transform_feedback:
+            return
         # Note that we don't free previous created shaders. The current reload
         # is called only when the gl context is reset. If we do it, we might
         # free newly created shaders (id collision)
@@ -515,6 +528,8 @@ cdef class Shader:
         cdef vertex_attr_t *attr
         cdef bytes name
 
+        # print("BIND VERTEX FORMAT!")
+
         # if the current vertex format used in the shader is the current one, do
         # nothing.
         # the same vertex format might be used by others shaders, so the
@@ -547,6 +562,12 @@ cdef class Shader:
                     cgl.glEnableVertexAttribArray(attr.index)
                 log_gl_error(
                     'Shader.bind_vertex_format-glEnableVertexAttribArray')
+                
+                if self._is_transform_feedback:
+                    print(cgl.glGetError(), "Setting vertex pointer")
+                    cgl.glVertexAttribPointer(attr.index, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
+
+                    print(cgl.glGetError(), "Vertex pointer set")
 
         # save for the next run.
         self._current_vertex_format = vertex_format
@@ -650,6 +671,10 @@ cdef class Shader:
 
     cdef get_program_log(self, shader):
         '''Return the program log.'''
+
+        if shader is None:
+            shader = self.program
+
         cdef char msg[2048]
         cdef GLsizei length
         msg[0] = b'\0'
