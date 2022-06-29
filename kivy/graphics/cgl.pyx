@@ -142,6 +142,14 @@ cdef void log_cgl_funcs() except *:
         Logger.debug('GL: glMapBufferRange is not available')
     if cgl.glUnmapBuffer == NULL:
         Logger.debug('GL: glUnmapBuffer is not available')
+    if cgl.glBeginQuery == NULL:
+        Logger.debug('GL: glBeginQuery is not available')
+    if cgl.glEndQuery == NULL:
+        Logger.debug('GL: glEndQuery is not available')
+    if cgl.glGenQueries == NULL:
+        Logger.debug('GL: glGenQueries is not available')
+    if cgl.glGetQueryObjectuiv == NULL:
+        Logger.debug('GL: glGetQueryObjectuiv is not available')
 
     if cgl.glBindAttribLocation == NULL:
         Logger.debug('GL: glBindAttribLocation is not available')

@@ -1156,18 +1156,19 @@ cdef class TransformFeedback(ObjectWithUid):
         BUFCOUNT = size
         BUFSIZE = BUFCOUNT*4#vi_from.gbatch.gvbo.gsize
 
+
+        vi_to.vertices = [0]*(BUFCOUNT*3)
+        vi_to.indices = list(range(BUFCOUNT*3))
+
         print("BUFSIZE:", BUFSIZE)
         cdef VertexFormat default_vertex = VertexFormat( (b'inValue', 1, 'float'),)
         self._shader.bind_vertex_format(default_vertex)#vi_from.gbatch.gvbo.gvertex_format)
 
 
         print(cgl.glGetError(), "Build receiving VBO")
-        # cdef GLuint tbo
-        # cgl.glGenBuffers(1, &tbo)
 
-        # vi_to.gbatch.gvbo.unbind()
         cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_DYNAMIC_DRAW)#GL_STATIC_READ)
+        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_DYNAMIC_DRAW)
 
         print(cgl.glGetError(), "Binding receiving buffer")
         cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
@@ -1176,19 +1177,33 @@ cdef class TransformFeedback(ObjectWithUid):
         print(cgl.glGetError(), "Disabling rasterizer")
         cgl.glEnable(GL_RASTERIZER_DISCARD)
 
+        print(cgl.glGetError(), "Building query")
+        cdef GLuint query
+        cgl.glGenQueries(1, &query)
+        cgl.glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query)
+
         print(cgl.glGetError(), "Going to activate Transform Feedback.")
         cgl.glBeginTransformFeedback(GL_TRIANGLES)
         print(cgl.glGetError(), "Transform Feedback activated.")
 
         print(cgl.glGetError(), "Draw arrays")
-        cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)#vi_from.gbatch.gcount)
-        print("GCOUNT:", BUFSIZE)#vi_from.gbatch.gcount)
+        cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)
+        print("GCOUNT:", BUFSIZE)
 
         print("RECEIVING BUFFER INFO:", vi_to.gbatch.gelements)
         print(cgl.glGetError(), "Ending Transform Feedback")
         cgl.glEndTransformFeedback()
         print(cgl.glGetError(), "Transform Feedback ended.")
         
+        print(cgl.glGetError(), "Ending query")
+        cgl.glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
+
+        print(cgl.glGetError(), "Receiving query data")
+        cdef GLuint* primitives = [0]
+        cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
+        print(cgl.glGetError(), "Primitives:", primitives[0])
+
+
         print(cgl.glGetError(), "Disabling Rasterizer")
         cgl.glDisable(GL_RASTERIZER_DISCARD)
 
@@ -1197,7 +1212,7 @@ cdef class TransformFeedback(ObjectWithUid):
 
         print(cgl.glGetError(), "Copying data back to host")
 
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE*3, GL_MAP_READ_BIT)
+        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives*3, GL_MAP_READ_BIT)
 
         print(cgl.glGetError(), "Map Buffer Initialised")
 
@@ -1211,6 +1226,9 @@ cdef class TransformFeedback(ObjectWithUid):
         print(cgl.glGetError(), "Resetting context")
         self._shader.stop()
         reset_gl_context()
+
+        vi_to.indices = list(range(primitives*3))
+
         return 0
 
 

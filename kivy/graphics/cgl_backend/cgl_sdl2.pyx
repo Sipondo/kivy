@@ -31,6 +31,10 @@ def init_backend():
         cgl.glBindBufferBase = <GLBINDBUFFERBASE>SDL_GL_GetProcAddress("glBindBufferBase")
         cgl.glMapBufferRange = <GLMAPBUFFERRANGE>SDL_GL_GetProcAddress("glMapBufferRange")
         cgl.glUnmapBuffer = <GLUNMAPBUFFER>SDL_GL_GetProcAddress("glUnmapBuffer")
+        cgl.glBeginQuery = <GLBEGINQUERY>SDL_GL_GetProcAddress("glBeginQuery")
+        cgl.glEndQuery = <GLENDQUERY>SDL_GL_GetProcAddress("glEndQuery")
+        cgl.glGenQueries = <GLGENQUERIES>SDL_GL_GetProcAddress("glGenQueries")
+        cgl.glGetQueryObjectuiv = <GLGETQUERYOBJECTUIV>SDL_GL_GetProcAddress("glGetQueryObjectuiv")
 
         cgl.glBindAttribLocation = <GLBINDATTRIBLOCATIONPTR>SDL_GL_GetProcAddress("glBindAttribLocation")
         cgl.glBindBuffer = <GLBINDBUFFERPTR>SDL_GL_GetProcAddress("glBindBuffer")

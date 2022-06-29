@@ -290,7 +290,6 @@ cdef class VertexBatch:
     def gid(self):
         return self.id
 
-    
     @property
     def gelements(self):
         return self.elements

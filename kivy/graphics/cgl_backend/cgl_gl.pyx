@@ -33,6 +33,10 @@ cdef extern from "gl_redirect.h":
     void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint)
     void* (__stdcall *glMapBufferRange)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
     GLboolean (__stdcall *glUnmapBuffer)(GLenum)
+    void (__stdcall *glBeginQuery)(GLenum, GLuint) nogil
+    void (__stdcall *glEndQuery)(GLenum) nogil
+    void (__stdcall *glGenQueries)(GLsizei, GLuint *ids) nogil
+    void (__stdcall *glGetQueryObjectuiv)(GLuint, GLenum, GLuint *params) nogil
 
 
     void (__stdcall *glBindAttribLocation)(GLuint, GLuint, const char *) nogil
@@ -175,6 +179,10 @@ cpdef link_static():
         cgl.glBindBufferBase = glBindBufferBase
         cgl.glMapBufferRange = glMapBufferRange
         cgl.glUnmapBuffer = glUnmapBuffer
+        cgl.glBeginQuery = glBeginQuery
+        cgl.glEndQuery = glEndQuery
+        cgl.glGenQueries = glGenQueries
+        cgl.glGetQueryObjectuiv = glGetQueryObjectuiv
         
         cgl.glBindAttribLocation = glBindAttribLocation
         cgl.glBindBuffer = glBindBuffer
