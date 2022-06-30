@@ -1212,7 +1212,7 @@ cdef class TransformFeedback(ObjectWithUid):
 
         print(cgl.glGetError(), "Copying data back to host")
 
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives*3, GL_MAP_READ_BIT)
+        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0]*3, GL_MAP_READ_BIT)
 
         print(cgl.glGetError(), "Map Buffer Initialised")
 
@@ -1227,7 +1227,7 @@ cdef class TransformFeedback(ObjectWithUid):
         self._shader.stop()
         reset_gl_context()
 
-        vi_to.indices = list(range(primitives*3))
+        vi_to.indices = list(range(primitives[0]*3))
 
         return 0
 

@@ -182,6 +182,8 @@ cdef class Shader:
         self.uniform_values = dict()
 
     def __init__(self, str vs=None, str gs=None, str fs=None, str source=None, int is_transform_feedback = 0):
+        cdef GLchar** feedbackVaryings = [ "outValue" ]
+
         self.program = cgl.glCreateProgram()
         if source:
             self.source = source
@@ -196,7 +198,6 @@ cdef class Shader:
             return
         
         print(cgl.glGetError(), "Defining varyings")
-        cdef GLchar** feedbackVaryings = [ "outValue" ]
         print(cgl.glGetError(), "Building varyings")
         cgl.glTransformFeedbackVaryings(self.program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
         print(cgl.glGetError(), "Varyings built!")
