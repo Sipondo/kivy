@@ -15,6 +15,7 @@ __all__ = ('Instruction', 'InstructionGroup',
 
 include "../include/config.pxi"
 include "opcodes.pxi"
+include "gl_debug_logger.pxi"
 
 from kivy.graphics.cgl cimport *
 from kivy.compat import PY2
@@ -1147,8 +1148,11 @@ cdef class TransformFeedback(ObjectWithUid):
             print(*args)
 
     def transform(self, vi_from, vi_to, input_count, debug=False):
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, 0)
+        self.print_debug(debug, "RECEIVING DATA", vi_to.gbatch.gvbo.gsize, vi_to.gbatch.gvbo.gdsize)
+        log_gl_error("Starting transform fedback")
+        self.print_debug(debug, cgl.glGetError(), "Starting transform feedback!")
         reset_gl_context()
+        self.print_debug(debug, cgl.glGetError(), "Context reset!")
         self._shader.use()
         self.print_debug(debug, cgl.glGetError(), "Program in use!")
 
@@ -1158,10 +1162,16 @@ cdef class TransformFeedback(ObjectWithUid):
         BUFCOUNT = input_count
         BUFSIZE = BUFCOUNT * 4
 
-        vi_to.vertices = [0]*(BUFCOUNT * self.max_vertices)
-        vi_to.indices = list(range(BUFCOUNT * self.max_vertices))
+        # vertices = [0]*(BUFCOUNT * self.max_vertices)
+        # indices = list(range(BUFCOUNT * self.max_vertices // 4))
+        # print("INDICES:", indices)
 
-        self.print_debug(debug, "BUFSIZE:", BUFSIZE)
+        # # vi_to.vertices = vertices
+        # # vi_to.indices = indices
+
+        # vi_to.gbatch.gset_data(vertices, indices)
+
+        self.print_debug(debug, "BUFSIZE:", BUFSIZE, BUFSIZE * self.max_vertices)
         self._shader.bind_vertex_format(self.in_format)
 
 
@@ -1190,7 +1200,8 @@ cdef class TransformFeedback(ObjectWithUid):
         cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)
         self.print_debug(debug, "GCOUNT:", BUFSIZE)
 
-        self.print_debug(debug, "RECEIVING BUFFER INFO:", vi_to.gbatch.gelements)
+        self.print_debug(debug, "SENDING BUFFER INFO:", vi_from.gbatch.gvbo)
+        self.print_debug(debug, "RECEIVING BUFFER INFO:", vi_to.gbatch.gvbo)
         self.print_debug(debug, cgl.glGetError(), "Ending Transform Feedback")
         cgl.glEndTransformFeedback()
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback ended.")
@@ -1226,9 +1237,11 @@ cdef class TransformFeedback(ObjectWithUid):
 
         self.print_debug(debug, cgl.glGetError(), "Resetting context")
         self._shader.stop()
+        self.print_debug(debug, cgl.glGetError(), "Shader stopped")
         reset_gl_context()
+        self.print_debug(debug, cgl.glGetError(), "Context reset")
 
-        vi_to.indices = list(range(primitives[0] * self.max_vertices))
+        vi_to.indices = list(range(primitives[0] * self.max_vertices // 4))
 
         return primitives[0]
 

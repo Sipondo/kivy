@@ -89,7 +89,7 @@ cdef class VBO:
             log_gl_error('VBO.update_buffer-glBindBuffer')
             cgl.glBufferSubData(GL_ARRAY_BUFFER, 0, self.data.size(),
                 self.data.pointer())
-            log_gl_error('VBO.update_buffer-glBufferSubData')
+            log_gl_error(f'VBO.update_buffer-glBufferSubData {self}')
             self.flags &= ~V_NEEDUPLOAD
 
     cdef void bind(self):
@@ -131,9 +131,9 @@ cdef class VBO:
         self.vbo_size = 0
 
     def __repr__(self):
-        return '<VBO at %x id=%r count=%d size=%d>' % (
+        return '<VBO at %x id=%r count=%d size=%d vbo_size=%d>' % (
                 id(self), self.id if self.flags & V_HAVEID else None,
-                self.data.count(), self.data.size())
+                self.data.count(), self.data.size(), self.vbo_size)
     
     @property
     def gid(self):
@@ -142,6 +142,10 @@ cdef class VBO:
     @property
     def gsize(self):
         return self.vbo_size
+    
+    @property
+    def gdsize(self):
+        return self.data.size()
     
     @property
     def gvertex_format(self):
@@ -277,6 +281,27 @@ cdef class VertexBatch:
                 id(self), self.id if self.flags & V_HAVEID else None,
                 self.elements.count(), self.elements.size(), self.get_mode(),
                 id(self.vbo))
+
+    def gset_data(self, vertices, indices):
+        cdef GLfloat* cvertices
+        cdef unsigned short* cindices
+        
+        cvertices = <GLfloat *>malloc(len(vertices)*sizeof(GLfloat))
+        if cvertices is NULL:
+            raise MemoryError()
+
+        for i in xrange(len(vertices)):
+            cvertices[i] = vertices[i]
+
+        
+        cindices = <unsigned short *>malloc(len(indices)*16)
+        if cindices is NULL:
+            raise MemoryError()
+
+        for i in xrange(len(indices)):
+            cindices[i] = indices[i]
+
+        self.set_data(cvertices, len(vertices), cindices, len(indices))
 
     @property
     def gvbo(self):
