@@ -2,6 +2,9 @@ from kivy.graphics.cgl cimport GLuint, GLint
 from kivy.graphics.transformation cimport Matrix
 from kivy.graphics.vertex cimport VertexFormat
 
+ctypedef struct varyings_t:
+    char *name
+
 cdef class ShaderSource:
     cdef int shader
     cdef int shadertype

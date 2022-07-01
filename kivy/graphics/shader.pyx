@@ -74,6 +74,9 @@ from kivy.logger import Logger
 from kivy.cache import Cache
 from kivy import kivy_shader_dir
 
+import numpy as np
+from libc.stdint cimport uint64_t
+
 cdef str header_vs = ''
 cdef str header_gs = ''
 cdef str header_fs = ''
@@ -182,7 +185,7 @@ cdef class Shader:
         self.uniform_values = dict()
 
     def __init__(self, str vs=None, str gs=None, str fs=None, str source=None, int is_transform_feedback = 0):
-        cdef GLchar** feedbackVaryings = [ "outValue" ]
+        # cdef GLchar** feedbackVaryings = [ "outValue" ]
 
         self.program = cgl.glCreateProgram()
         if source:
@@ -197,14 +200,31 @@ cdef class Shader:
         if not self._is_transform_feedback:
             return
         
-        print(cgl.glGetError(), "Defining varyings")
-        print(cgl.glGetError(), "Building varyings")
-        cgl.glTransformFeedbackVaryings(self.program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
-        print(cgl.glGetError(), "Varyings built!")
-        self.link_program()
+        # print(cgl.glGetError(), "Defining varyings")
+        # print(cgl.glGetError(), "Building varyings")
+        # cgl.glTransformFeedbackVaryings(self.program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
+        # print(cgl.glGetError(), "Varyings built!")
+        # self.link_program()
 
     def __dealloc__(self):
         get_context().dealloc_shader(self)
+
+    def set_varyings(self, fmt):
+        # fmt conversion from: https://stackoverflow.com/questions/9665177/cython-converting-list-of-strings-to-char
+        # print(cgl.glGetError(), "Defining varyings")
+        bs = [e.encode('utf-8') + b'\x00' for e in fmt]
+
+        a = np.zeros(len(bs), dtype = np.uint64)
+        for i in range(len(bs)):
+            a[i] = <uint64_t>(<char *>bs[i])
+
+        cdef uint64_t[:] ca = a
+        cdef GLchar ** final_ptr = <char **>&ca[0]
+
+        # print(cgl.glGetError(), "Building varyings")
+        cgl.glTransformFeedbackVaryings(self.program, 1, final_ptr, GL_INTERLEAVED_ATTRIBS)
+        # print(cgl.glGetError(), "Varyings built!")
+        self.link_program()
 
     cdef void reload(self):
         if self._is_transform_feedback:

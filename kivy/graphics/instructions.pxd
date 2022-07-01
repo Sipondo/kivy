@@ -131,6 +131,9 @@ cdef RenderContext getActiveContext()
 cdef class TransformFeedback(ObjectWithUid):
     cdef Shader _shader
     cdef dict state_stacks
+    cdef int max_vertices
+    cdef VertexFormat in_format
+    cdef list out_varyings
     
     cdef void set_state(self, str name, value, int apply_now=?)
     cdef get_state(self, str name)

@@ -1064,6 +1064,10 @@ cdef class TransformFeedback(ObjectWithUid):
         gs_src = kwargs.get('gs', None)
         fs_src = kwargs.get('fs', None)
 
+        self.max_vertices = kwargs.get('max_vertices', 3)
+        self.in_format = kwargs.get('in_format', VertexFormat( (b'inValue', 1, 'float'),))
+        self.out_varyings = kwargs.get('out_varyings ', [ "outValue"])
+
         if vs_src is None:
             vs_src = default_transform_vs
         if gs_src is None:
@@ -1073,18 +1077,11 @@ cdef class TransformFeedback(ObjectWithUid):
         
         self._shader = Shader(vs_src, gs_src, fs_src, is_transform_feedback=1)
 
-        # # load default texture image
-        # filename = join(kivy_shader_dir, 'default.png')
-        # tex = Cache.get('kv.texture', filename)
-        # if not tex:
-        #     tex = Image(filename).texture
-        #     Cache.append('kv.texture', filename, tex)
-        # self.default_texture = tex
+        self._shader.set_varyings( self.out_varyings )
 
         self.state_stacks = {
             'opacity': [1.0],
         }
-
         cdef str key
         self._shader.use()
         for key, stack in self.state_stacks.iteritems():
@@ -1145,7 +1142,97 @@ cdef class TransformFeedback(ObjectWithUid):
         '''
         return self._shader
 
-    def transform_dynamic_example(self, vi_from, vi_to, size):
+    def print_debug(self, debug, *args):
+        if debug:
+            print(*args)
+
+    def transform(self, vi_from, vi_to, input_count, debug=False):
+        cgl.glBindBuffer(GL_ARRAY_BUFFER, 0)
+        reset_gl_context()
+        self._shader.use()
+        self.print_debug(debug, cgl.glGetError(), "Program in use!")
+
+        self.print_debug(debug, cgl.glGetError(), "Binding VBO")
+        cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
+
+        BUFCOUNT = input_count
+        BUFSIZE = BUFCOUNT * 4
+
+        vi_to.vertices = [0]*(BUFCOUNT * self.max_vertices)
+        vi_to.indices = list(range(BUFCOUNT * self.max_vertices))
+
+        self.print_debug(debug, "BUFSIZE:", BUFSIZE)
+        self._shader.bind_vertex_format(self.in_format)
+
+
+        self.print_debug(debug, cgl.glGetError(), "Build receiving VBO")
+
+        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
+        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE * self.max_vertices, NULL, GL_DYNAMIC_DRAW)
+
+        self.print_debug(debug, cgl.glGetError(), "Binding receiving buffer")
+        cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
+
+
+        self.print_debug(debug, cgl.glGetError(), "Disabling rasterizer")
+        cgl.glEnable(GL_RASTERIZER_DISCARD)
+
+        self.print_debug(debug, cgl.glGetError(), "Building query")
+        cdef GLuint query
+        cgl.glGenQueries(1, &query)
+        cgl.glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query)
+
+        self.print_debug(debug, cgl.glGetError(), "Going to activate Transform Feedback.")
+        cgl.glBeginTransformFeedback(GL_TRIANGLES)
+        self.print_debug(debug, cgl.glGetError(), "Transform Feedback activated.")
+
+        self.print_debug(debug, cgl.glGetError(), "Draw arrays")
+        cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)
+        self.print_debug(debug, "GCOUNT:", BUFSIZE)
+
+        self.print_debug(debug, "RECEIVING BUFFER INFO:", vi_to.gbatch.gelements)
+        self.print_debug(debug, cgl.glGetError(), "Ending Transform Feedback")
+        cgl.glEndTransformFeedback()
+        self.print_debug(debug, cgl.glGetError(), "Transform Feedback ended.")
+        
+        self.print_debug(debug, cgl.glGetError(), "Ending query")
+        cgl.glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
+
+        self.print_debug(debug, cgl.glGetError(), "Receiving query data")
+        cdef GLuint* primitives = [0]
+        cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
+        self.print_debug(debug, cgl.glGetError(), "Primitives:", primitives[0])
+
+
+        self.print_debug(debug, cgl.glGetError(), "Disabling Rasterizer")
+        cgl.glDisable(GL_RASTERIZER_DISCARD)
+
+        self.print_debug(debug, cgl.glGetError(), "Flushing")
+        cgl.glFlush()
+
+        if debug:
+            self.print_debug(debug, cgl.glGetError(), "Copying data back to host")
+
+            transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0] * self.max_vertices, GL_MAP_READ_BIT)
+
+            self.print_debug(debug, cgl.glGetError(), "Map Buffer Initialised")
+
+            self.print_debug(debug, cgl.glGetError(), "Unmapping copy")
+            cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+
+            for i in range(BUFCOUNT * self.max_vertices):
+                self.print_debug(debug, cgl.glGetError(), f"{i}:", transform_result[i])
+            self.print_debug(debug, cgl.glGetError(), "Mapbufferrange! 2")
+
+        self.print_debug(debug, cgl.glGetError(), "Resetting context")
+        self._shader.stop()
+        reset_gl_context()
+
+        vi_to.indices = list(range(primitives[0] * self.max_vertices))
+
+        return primitives[0]
+
+    def transform_dynamic_example(self, vi_from, vi_to, input_count):
         cgl.glBindBuffer(GL_ARRAY_BUFFER, 0)
         reset_gl_context()
         self._shader.use()
@@ -1153,22 +1240,21 @@ cdef class TransformFeedback(ObjectWithUid):
 
         print(cgl.glGetError(), "Binding VBO")
         cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
-        BUFCOUNT = size
-        BUFSIZE = BUFCOUNT*4#vi_from.gbatch.gvbo.gsize
 
+        BUFCOUNT = input_count
+        BUFSIZE = BUFCOUNT * 4
 
-        vi_to.vertices = [0]*(BUFCOUNT*3)
-        vi_to.indices = list(range(BUFCOUNT*3))
+        vi_to.vertices = [0]*(BUFCOUNT * self.max_vertices)
+        vi_to.indices = list(range(BUFCOUNT * self.max_vertices))
 
         print("BUFSIZE:", BUFSIZE)
-        cdef VertexFormat default_vertex = VertexFormat( (b'inValue', 1, 'float'),)
-        self._shader.bind_vertex_format(default_vertex)#vi_from.gbatch.gvbo.gvertex_format)
+        self._shader.bind_vertex_format(self.in_format)
 
 
         print(cgl.glGetError(), "Build receiving VBO")
 
         cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_DYNAMIC_DRAW)
+        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE * self.max_vertices, NULL, GL_DYNAMIC_DRAW)
 
         print(cgl.glGetError(), "Binding receiving buffer")
         cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
@@ -1212,14 +1298,14 @@ cdef class TransformFeedback(ObjectWithUid):
 
         print(cgl.glGetError(), "Copying data back to host")
 
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0]*3, GL_MAP_READ_BIT)
+        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0] * self.max_vertices, GL_MAP_READ_BIT)
 
         print(cgl.glGetError(), "Map Buffer Initialised")
 
         print(cgl.glGetError(), "Unmapping copy")
         cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
-        for i in range(BUFCOUNT*3):
+        for i in range(BUFCOUNT * self.max_vertices):
             print(cgl.glGetError(), f"{i}:", transform_result[i])
         print(cgl.glGetError(), "Mapbufferrange! 2")
 
@@ -1227,9 +1313,9 @@ cdef class TransformFeedback(ObjectWithUid):
         self._shader.stop()
         reset_gl_context()
 
-        vi_to.indices = list(range(primitives[0]*3))
+        vi_to.indices = list(range(primitives[0] * self.max_vertices))
 
-        return 0
+        return primitives[0]
 
 
     def transform_via_shader_example(self):
