@@ -1148,6 +1148,8 @@ cdef class TransformFeedback(ObjectWithUid):
             print(*args)
 
     def transform(self, vi_from, vi_to, input_count, debug=False):
+        self.in_format = VertexFormat( (b'inValue', 1, 'float'),)
+        
         self.print_debug(debug, "RECEIVING DATA", vi_to.gbatch.gvbo.gsize, vi_to.gbatch.gvbo.gdsize)
         log_gl_error("Starting transform fedback")
         self.print_debug(debug, cgl.glGetError(), "Starting transform feedback!")

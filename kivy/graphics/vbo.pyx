@@ -130,6 +130,8 @@ cdef class VBO:
         self.data.remove(indices, count)
 
     cdef void reload(self):
+        if self.is_transform_feedback: #doesn't work, TODO: allow resizing
+            return
         self.flags = V_NEEDUPLOAD | V_NEEDGEN
         self.vbo_size = 0
 

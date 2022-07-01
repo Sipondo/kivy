@@ -585,10 +585,10 @@ cdef class Shader:
                     'Shader.bind_vertex_format-glEnableVertexAttribArray')
                 
                 if self._is_transform_feedback:
-                    print(cgl.glGetError(), "Setting vertex pointer")
+                    # print(cgl.glGetError(), "Setting vertex pointer")
                     cgl.glVertexAttribPointer(attr.index, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
 
-                    print(cgl.glGetError(), "Vertex pointer set")
+                    # print(cgl.glGetError(), "Vertex pointer set")
 
         # save for the next run.
         self._current_vertex_format = vertex_format
