@@ -17,6 +17,7 @@ cdef class VBO:
     cdef short flags
     cdef long vbo_size
     cdef VertexFormat vertex_format
+    cdef int is_transform_feedback
 
     cdef void update_buffer(self)
     cdef void bind(self)

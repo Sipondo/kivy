@@ -55,6 +55,7 @@ cdef class VBO:
         self.format_size = vertex_format.vbytesize
         self.flags = V_NEEDGEN | V_NEEDUPLOAD
         self.vbo_size = 0
+        self.is_transform_feedback = 0
 
     def __dealloc__(self):
         get_context().dealloc_vbo(self)
@@ -66,6 +67,8 @@ cdef class VBO:
         return self.flags & V_HAVEID
 
     cdef void update_buffer(self):
+        if self.is_transform_feedback:
+            return
         # generate VBO if not done yet
         if self.flags & V_NEEDGEN:
             cgl.glGenBuffers(1, &self.id)
@@ -150,6 +153,9 @@ cdef class VBO:
     @property
     def gvertex_format(self):
         return self.vertex_format
+    
+    def set_transform_feedback(self, i):
+        self.is_transform_feedback=i
 
 
 cdef class VertexBatch:

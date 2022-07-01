@@ -1171,6 +1171,8 @@ cdef class TransformFeedback(ObjectWithUid):
 
         # vi_to.gbatch.gset_data(vertices, indices)
 
+        vi_to.gbatch.gvbo.set_transform_feedback(1)
+
         self.print_debug(debug, "BUFSIZE:", BUFSIZE, BUFSIZE * self.max_vertices)
         self._shader.bind_vertex_format(self.in_format)
 
