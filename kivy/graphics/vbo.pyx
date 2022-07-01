@@ -92,7 +92,7 @@ cdef class VBO:
             log_gl_error('VBO.update_buffer-glBindBuffer')
             cgl.glBufferSubData(GL_ARRAY_BUFFER, 0, self.data.size(),
                 self.data.pointer())
-            log_gl_error(f'VBO.update_buffer-glBufferSubData {self}')
+            log_gl_error('VBO.update_buffer-glBufferSubData')
             self.flags &= ~V_NEEDUPLOAD
 
     cdef void bind(self):
@@ -140,7 +140,7 @@ cdef class VBO:
                 id(self), self.id if self.flags & V_HAVEID else None,
                 self.data.count(), self.data.size(), self.vbo_size)
     
-    @property
+    @property   
     def gid(self):
         return self.id
 
