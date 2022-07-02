@@ -1065,8 +1065,8 @@ cdef class TransformFeedback(ObjectWithUid):
         gs_src = kwargs.get('gs', None)
         fs_src = kwargs.get('fs', None)
 
-        self.max_vertices = kwargs.get('max_vertices', 3)
-        self.in_format = kwargs.get('in_format', VertexFormat( (b'inValue', 1, 'float'),))
+        self.max_primitives = kwargs.get('max_primitives', 3)
+        self.in_format = kwargs.get('in_format', [(b'inValue', 1, 'float'),])
         self.out_varyings = kwargs.get('out_varyings ', [ "outValue"])
 
         if vs_src is None:
@@ -1148,7 +1148,8 @@ cdef class TransformFeedback(ObjectWithUid):
             print(*args)
 
     def transform(self, vi_from, vi_to, input_count, debug=False):
-        self.in_format = VertexFormat( (b'inValue', 1, 'float'),)
+        # vertex_format = VertexFormat( (b'inValue', 1, 'float'),)
+        vertex_format = VertexFormat( *self.in_format )
         
         self.print_debug(debug, "RECEIVING DATA", vi_to.gbatch.gvbo.gsize, vi_to.gbatch.gvbo.gdsize)
         log_gl_error("Starting transform fedback")
@@ -1162,27 +1163,18 @@ cdef class TransformFeedback(ObjectWithUid):
         cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
 
         BUFCOUNT = input_count
-        BUFSIZE = BUFCOUNT * 4
-
-        # vertices = [0]*(BUFCOUNT * self.max_vertices)
-        # indices = list(range(BUFCOUNT * self.max_vertices // 4))
-        # print("INDICES:", indices)
-
-        # # vi_to.vertices = vertices
-        # # vi_to.indices = indices
-
-        # vi_to.gbatch.gset_data(vertices, indices)
+        BUFSIZE = BUFCOUNT * self.max_primitives * 4 * vertex_format.vsize
 
         vi_to.gbatch.gvbo.set_transform_feedback(1)
 
-        self.print_debug(debug, "BUFSIZE:", BUFSIZE, BUFSIZE * self.max_vertices)
-        self._shader.bind_vertex_format(self.in_format)
+        self.print_debug(debug, "BUFSIZE:", BUFSIZE)
+        self._shader.bind_vertex_format(vertex_format)
 
 
         self.print_debug(debug, cgl.glGetError(), "Build receiving VBO")
 
         cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE * self.max_vertices, NULL, GL_DYNAMIC_DRAW)
+        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_DYNAMIC_DRAW)
 
         self.print_debug(debug, cgl.glGetError(), "Binding receiving buffer")
         cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
@@ -1197,7 +1189,7 @@ cdef class TransformFeedback(ObjectWithUid):
         cgl.glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query)
 
         self.print_debug(debug, cgl.glGetError(), "Going to activate Transform Feedback.")
-        cgl.glBeginTransformFeedback(GL_TRIANGLES)
+        cgl.glBeginTransformFeedback(GL_POINTS)
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback activated.")
 
         self.print_debug(debug, cgl.glGetError(), "Draw arrays")
@@ -1217,6 +1209,9 @@ cdef class TransformFeedback(ObjectWithUid):
         cdef GLuint* primitives = [0]
         cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
         self.print_debug(debug, cgl.glGetError(), "Primitives:", primitives[0])
+        ACTUAL_BUFSIZE = BUFCOUNT * primitives[0] * 4 * vertex_format.vsize
+
+        self.print_debug(debug, cgl.glGetError(), "Actual BUFSIZE:", ACTUAL_BUFSIZE)
 
 
         self.print_debug(debug, cgl.glGetError(), "Disabling Rasterizer")
@@ -1228,14 +1223,14 @@ cdef class TransformFeedback(ObjectWithUid):
         if debug:
             self.print_debug(debug, cgl.glGetError(), "Copying data back to host")
 
-            transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0] * self.max_vertices, GL_MAP_READ_BIT)
+            transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ACTUAL_BUFSIZE, GL_MAP_READ_BIT)
 
             self.print_debug(debug, cgl.glGetError(), "Map Buffer Initialised")
 
             self.print_debug(debug, cgl.glGetError(), "Unmapping copy")
             cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
-            for i in range(BUFCOUNT * self.max_vertices):
+            for i in range(ACTUAL_BUFSIZE // 4):
                 self.print_debug(debug, cgl.glGetError(), f"{i}:", transform_result[i])
             self.print_debug(debug, cgl.glGetError(), "Mapbufferrange! 2")
 
@@ -1245,600 +1240,600 @@ cdef class TransformFeedback(ObjectWithUid):
         reset_gl_context()
         self.print_debug(debug, cgl.glGetError(), "Context reset")
 
-        vi_to.indices = list(range(primitives[0] * self.max_vertices // 4))
+        vi_to.indices = list(range(primitives[0]))
 
         return primitives[0]
 
-    def transform_dynamic_example(self, vi_from, vi_to, input_count):
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, 0)
-        reset_gl_context()
-        self._shader.use()
-        print(cgl.glGetError(), "Program in use!")
+    # def transform_dynamic_example(self, vi_from, vi_to, input_count):
+    #     cgl.glBindBuffer(GL_ARRAY_BUFFER, 0)
+    #     reset_gl_context()
+    #     self._shader.use()
+    #     print(cgl.glGetError(), "Program in use!")
 
-        print(cgl.glGetError(), "Binding VBO")
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
+    #     print(cgl.glGetError(), "Binding VBO")
+    #     cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
 
-        BUFCOUNT = input_count
-        BUFSIZE = BUFCOUNT * 4
+    #     BUFCOUNT = input_count
+    #     BUFSIZE = BUFCOUNT * 4
 
-        vi_to.vertices = [0]*(BUFCOUNT * self.max_vertices)
-        vi_to.indices = list(range(BUFCOUNT * self.max_vertices))
+    #     vi_to.vertices = [0]*(BUFCOUNT * self.max_primitives)
+    #     vi_to.indices = list(range(BUFCOUNT * self.max_primitives))
 
-        print("BUFSIZE:", BUFSIZE)
-        self._shader.bind_vertex_format(self.in_format)
-
-
-        print(cgl.glGetError(), "Build receiving VBO")
-
-        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE * self.max_vertices, NULL, GL_DYNAMIC_DRAW)
-
-        print(cgl.glGetError(), "Binding receiving buffer")
-        cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
+    #     print("BUFSIZE:", BUFSIZE)
+    #     self._shader.bind_vertex_format(vertex_format)
 
 
-        print(cgl.glGetError(), "Disabling rasterizer")
-        cgl.glEnable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Build receiving VBO")
 
-        print(cgl.glGetError(), "Building query")
-        cdef GLuint query
-        cgl.glGenQueries(1, &query)
-        cgl.glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query)
+    #     cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
+    #     cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE * self.max_primitives, NULL, GL_DYNAMIC_DRAW)
 
-        print(cgl.glGetError(), "Going to activate Transform Feedback.")
-        cgl.glBeginTransformFeedback(GL_TRIANGLES)
-        print(cgl.glGetError(), "Transform Feedback activated.")
+    #     print(cgl.glGetError(), "Binding receiving buffer")
+    #     cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
 
-        print(cgl.glGetError(), "Draw arrays")
-        cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)
-        print("GCOUNT:", BUFSIZE)
 
-        print("RECEIVING BUFFER INFO:", vi_to.gbatch.gelements)
-        print(cgl.glGetError(), "Ending Transform Feedback")
-        cgl.glEndTransformFeedback()
-        print(cgl.glGetError(), "Transform Feedback ended.")
+    #     print(cgl.glGetError(), "Disabling rasterizer")
+    #     cgl.glEnable(GL_RASTERIZER_DISCARD)
+
+    #     print(cgl.glGetError(), "Building query")
+    #     cdef GLuint query
+    #     cgl.glGenQueries(1, &query)
+    #     cgl.glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query)
+
+    #     print(cgl.glGetError(), "Going to activate Transform Feedback.")
+    #     cgl.glBeginTransformFeedback(GL_TRIANGLES)
+    #     print(cgl.glGetError(), "Transform Feedback activated.")
+
+    #     print(cgl.glGetError(), "Draw arrays")
+    #     cgl.glDrawArrays(GL_POINTS, 0, BUFCOUNT)
+    #     print("GCOUNT:", BUFSIZE)
+
+    #     print("RECEIVING BUFFER INFO:", vi_to.gbatch.gelements)
+    #     print(cgl.glGetError(), "Ending Transform Feedback")
+    #     cgl.glEndTransformFeedback()
+    #     print(cgl.glGetError(), "Transform Feedback ended.")
         
-        print(cgl.glGetError(), "Ending query")
-        cgl.glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
+    #     print(cgl.glGetError(), "Ending query")
+    #     cgl.glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN)
 
-        print(cgl.glGetError(), "Receiving query data")
-        cdef GLuint* primitives = [0]
-        cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
-        print(cgl.glGetError(), "Primitives:", primitives[0])
-
-
-        print(cgl.glGetError(), "Disabling Rasterizer")
-        cgl.glDisable(GL_RASTERIZER_DISCARD)
-
-        print(cgl.glGetError(), "Flushing")
-        cgl.glFlush()
-
-        print(cgl.glGetError(), "Copying data back to host")
-
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0] * self.max_vertices, GL_MAP_READ_BIT)
-
-        print(cgl.glGetError(), "Map Buffer Initialised")
-
-        print(cgl.glGetError(), "Unmapping copy")
-        cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
-
-        for i in range(BUFCOUNT * self.max_vertices):
-            print(cgl.glGetError(), f"{i}:", transform_result[i])
-        print(cgl.glGetError(), "Mapbufferrange! 2")
-
-        print(cgl.glGetError(), "Resetting context")
-        self._shader.stop()
-        reset_gl_context()
-
-        vi_to.indices = list(range(primitives[0] * self.max_vertices))
-
-        return primitives[0]
+    #     print(cgl.glGetError(), "Receiving query data")
+    #     cdef GLuint* primitives = [0]
+    #     cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
+    #     print(cgl.glGetError(), "Primitives:", primitives[0])
 
 
-    def transform_via_shader_example(self):
+    #     print(cgl.glGetError(), "Disabling Rasterizer")
+    #     cgl.glDisable(GL_RASTERIZER_DISCARD)
+
+    #     print(cgl.glGetError(), "Flushing")
+    #     cgl.glFlush()
+
+    #     print(cgl.glGetError(), "Copying data back to host")
+
+    #     transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, primitives[0] * self.max_primitives, GL_MAP_READ_BIT)
+
+    #     print(cgl.glGetError(), "Map Buffer Initialised")
+
+    #     print(cgl.glGetError(), "Unmapping copy")
+    #     cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+
+    #     for i in range(BUFCOUNT * self.max_primitives):
+    #         print(cgl.glGetError(), f"{i}:", transform_result[i])
+    #     print(cgl.glGetError(), "Mapbufferrange! 2")
+
+    #     print(cgl.glGetError(), "Resetting context")
+    #     self._shader.stop()
+    #     reset_gl_context()
+
+    #     vi_to.indices = list(range(primitives[0] * self.max_primitives))
+
+    #     return primitives[0]
+
+
+    # def transform_via_shader_example(self):
         
-        self._shader.use()
-        print(cgl.glGetError(), "Program in use!")
+    #     self._shader.use()
+    #     print(cgl.glGetError(), "Program in use!")
 
-        print(cgl.glGetError(), "Generating data!")
-        cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
+    #     print(cgl.glGetError(), "Generating data!")
+    #     cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
 
-        print(cgl.glGetError(), transform_data[0])
-        print(cgl.glGetError(), transform_data[1])
-        print(cgl.glGetError(), transform_data[2])
-        print(cgl.glGetError(), transform_data[3])
-        print(cgl.glGetError(), transform_data[4])
+    #     print(cgl.glGetError(), transform_data[0])
+    #     print(cgl.glGetError(), transform_data[1])
+    #     print(cgl.glGetError(), transform_data[2])
+    #     print(cgl.glGetError(), transform_data[3])
+    #     print(cgl.glGetError(), transform_data[4])
 
-        print(cgl.glGetError(), "Building VBO")
-        cdef GLuint transform_vbo
-        cgl.glGenBuffers(1, &transform_vbo)
+    #     print(cgl.glGetError(), "Building VBO")
+    #     cdef GLuint transform_vbo
+    #     cgl.glGenBuffers(1, &transform_vbo)
     	
-        print(cgl.glGetError(), "Binding VBO")
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
+    #     print(cgl.glGetError(), "Binding VBO")
+    #     cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
 
-        BUFSIZE = 5 * 4
-        print(cgl.glGetError(), "Upload data to buffer")
-        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
-
-
-        cdef VertexFormat default_vertex = VertexFormat( (b'inValue', 1, 'float'),)
-        self._shader.bind_vertex_format(default_vertex)
+    #     BUFSIZE = 5 * 4
+    #     print(cgl.glGetError(), "Upload data to buffer")
+    #     cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
 
 
-        print(cgl.glGetError(), "Build receiving VBO")
-        cdef GLuint tbo
-        cgl.glGenBuffers(1, &tbo)
-        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_STATIC_READ)
-
-        print(cgl.glGetError(), "Binding receiving buffer")
-        cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
+    #     cdef VertexFormat default_vertex = VertexFormat( (b'inValue', 1, 'float'),)
+    #     self._shader.bind_vertex_format(default_vertex)
 
 
-        print(cgl.glGetError(), "Disabling rasterizer")
-        cgl.glEnable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Build receiving VBO")
+    #     cdef GLuint tbo
+    #     cgl.glGenBuffers(1, &tbo)
+    #     cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
+    #     cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_STATIC_READ)
 
-        print(cgl.glGetError(), "Going to activate Transform Feedback.")
-        cgl.glBeginTransformFeedback(GL_TRIANGLES)
-        print(cgl.glGetError(), "Transform Feedback activated.")
+    #     print(cgl.glGetError(), "Binding receiving buffer")
+    #     cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
 
-        print(cgl.glGetError(), "Draw arrays")
-        cgl.glDrawArrays(GL_POINTS, 0, 5)
 
-        print(cgl.glGetError(), "Ending Transform Feedback")
-        cgl.glEndTransformFeedback()
-        print(cgl.glGetError(), "Transform Feedback ended.")
+    #     print(cgl.glGetError(), "Disabling rasterizer")
+    #     cgl.glEnable(GL_RASTERIZER_DISCARD)
+
+    #     print(cgl.glGetError(), "Going to activate Transform Feedback.")
+    #     cgl.glBeginTransformFeedback(GL_TRIANGLES)
+    #     print(cgl.glGetError(), "Transform Feedback activated.")
+
+    #     print(cgl.glGetError(), "Draw arrays")
+    #     cgl.glDrawArrays(GL_POINTS, 0, 5)
+
+    #     print(cgl.glGetError(), "Ending Transform Feedback")
+    #     cgl.glEndTransformFeedback()
+    #     print(cgl.glGetError(), "Transform Feedback ended.")
         
-        print(cgl.glGetError(), "Disabling Rasterizer")
-        cgl.glDisable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Disabling Rasterizer")
+    #     cgl.glDisable(GL_RASTERIZER_DISCARD)
 
-        print(cgl.glGetError(), "Flushing")
-        cgl.glFlush()
+    #     print(cgl.glGetError(), "Flushing")
+    #     cgl.glFlush()
 
-        print(cgl.glGetError(), "Fetching data")
-        cdef GLfloat feedback[5*3]
+    #     print(cgl.glGetError(), "Fetching data")
+    #     cdef GLfloat feedback[5*3]
 
-        print(cgl.glGetError(), "Copying data back to host")
+    #     print(cgl.glGetError(), "Copying data back to host")
 
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE*3, GL_MAP_READ_BIT)
+    #     transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE*3, GL_MAP_READ_BIT)
 
-        print(cgl.glGetError(), "Map Buffer Initialised")
+    #     print(cgl.glGetError(), "Map Buffer Initialised")
 
-        print(cgl.glGetError(), "Unmapping copy")
-        cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+    #     print(cgl.glGetError(), "Unmapping copy")
+    #     cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
-        for i in range(15):
-            print(cgl.glGetError(), f"{i}:", transform_result[i])
-        print(cgl.glGetError(), "Mapbufferrange! 2")
+    #     for i in range(15):
+    #         print(cgl.glGetError(), f"{i}:", transform_result[i])
+    #     print(cgl.glGetError(), "Mapbufferrange! 2")
 
-        print(cgl.glGetError(), "Resetting context")
-        self._shader.stop()
-        reset_gl_context()
-        return 0
+    #     print(cgl.glGetError(), "Resetting context")
+    #     self._shader.stop()
+    #     reset_gl_context()
+    #     return 0
 
 
-    def transform_static_example(self):
-        cdef RenderContext rcx
-        cdef Context ctx
-        # cdef Shader shader
-        cdef GLuint transform_shader
-        cdef GLuint frag_shader
-        cdef int i
+    # def transform_static_example(self):
+    #     cdef RenderContext rcx
+    #     cdef Context ctx
+    #     # cdef Shader shader
+    #     cdef GLuint transform_shader
+    #     cdef GLuint frag_shader
+    #     cdef int i
         
-        # Actual transform vertex shader
-        cdef char* source = """#version 320 es
+    #     # Actual transform vertex shader
+    #     cdef char* source = """#version 320 es
 
-            #ifdef GL_ES
-            precision mediump float;
-            #endif
+    #         #ifdef GL_ES
+    #         precision mediump float;
+    #         #endif
 
-            in float inValue;
-            out float outValue;
+    #         in float inValue;
+    #         out float outValue;
 
-            void main()
-            {
-                outValue = sqrt(inValue);
-            }"""
+    #         void main()
+    #         {
+    #             outValue = sqrt(inValue);
+    #         }"""
 
-        # Required for Android
-        cdef char* fragsource = """#version 320 es
+    #     # Required for Android
+    #     cdef char* fragsource = """#version 320 es
 
-            #ifdef GL_ES
-            precision mediump float;
-            #endif
+    #         #ifdef GL_ES
+    #         precision mediump float;
+    #         #endif
 
-            out vec4 fragColor;
+    #         out vec4 fragColor;
 
-            void main() {
-              fragColor = vec4(1.0,1.0,1.0,1.0);
-            }"""
+    #         void main() {
+    #           fragColor = vec4(1.0,1.0,1.0,1.0);
+    #         }"""
 
-        print(cgl.glGetError(), source)
-        print(cgl.glGetError(), "Building the Transform Feedback Vertex shader.")
-        transform_shader = cgl.glCreateShader(GL_VERTEX_SHADER)
-        cgl.glShaderSource(transform_shader, 1, <const_char_ptr*> &source, NULL)
-        cgl.glCompileShader(transform_shader)
-        print(cgl.glGetError(), "Transform Feedback Vertex shader has been built and compiled.")
+    #     print(cgl.glGetError(), source)
+    #     print(cgl.glGetError(), "Building the Transform Feedback Vertex shader.")
+    #     transform_shader = cgl.glCreateShader(GL_VERTEX_SHADER)
+    #     cgl.glShaderSource(transform_shader, 1, <const_char_ptr*> &source, NULL)
+    #     cgl.glCompileShader(transform_shader)
+    #     print(cgl.glGetError(), "Transform Feedback Vertex shader has been built and compiled.")
 
-        print(cgl.glGetError(), "Building the Transform Feedback Fragment shader.")
-        f_transform_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
-        cgl.glShaderSource(f_transform_shader, 1, <const_char_ptr*> &fragsource, NULL)
-        cgl.glCompileShader(f_transform_shader)
-        print(cgl.glGetError(), "Transform Feedback Fragment shader has been built and compiled.")
+    #     print(cgl.glGetError(), "Building the Transform Feedback Fragment shader.")
+    #     f_transform_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
+    #     cgl.glShaderSource(f_transform_shader, 1, <const_char_ptr*> &fragsource, NULL)
+    #     cgl.glCompileShader(f_transform_shader)
+    #     print(cgl.glGetError(), "Transform Feedback Fragment shader has been built and compiled.")
 
-        print(cgl.glGetError(), "Building program.")
-        cdef GLuint transform_program = cgl.glCreateProgram()
-        print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
-        cgl.glAttachShader(transform_program, transform_shader)
-        print(cgl.glGetError(), "Vertex attachment succesful.")
-        cgl.glAttachShader(transform_program, f_transform_shader)
-        print(cgl.glGetError(), "Fragment attachment succesful.")
+    #     print(cgl.glGetError(), "Building program.")
+    #     cdef GLuint transform_program = cgl.glCreateProgram()
+    #     print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
+    #     cgl.glAttachShader(transform_program, transform_shader)
+    #     print(cgl.glGetError(), "Vertex attachment succesful.")
+    #     cgl.glAttachShader(transform_program, f_transform_shader)
+    #     print(cgl.glGetError(), "Fragment attachment succesful.")
         
-        print(cgl.glGetError(), "Defining varyings")
-        cdef GLchar** feedbackVaryings = [ "outValue" ]
-        print(cgl.glGetError(), "Building varyings")
-        cgl.glTransformFeedbackVaryings(transform_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
-        print(cgl.glGetError(), "Varyings built!")
+    #     print(cgl.glGetError(), "Defining varyings")
+    #     cdef GLchar** feedbackVaryings = [ "outValue" ]
+    #     print(cgl.glGetError(), "Building varyings")
+    #     cgl.glTransformFeedbackVaryings(transform_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
+    #     print(cgl.glGetError(), "Varyings built!")
 
-        print(cgl.glGetError(), "Linking program")
-        cgl.glLinkProgram(transform_program)
-        print(cgl.glGetError(), "Program linked!")
+    #     print(cgl.glGetError(), "Linking program")
+    #     cgl.glLinkProgram(transform_program)
+    #     print(cgl.glGetError(), "Program linked!")
 
-        cdef char msg[2048]
-        cdef GLsizei length
-        msg[0] = b'\0'
-        cgl.glGetProgramInfoLog(transform_program, 2048, &length, msg)
-        cdef bytes ret = msg[:length]
-        print(cgl.glGetError(), ret.split(b'\0')[0].decode('utf-8'))
+    #     cdef char msg[2048]
+    #     cdef GLsizei length
+    #     msg[0] = b'\0'
+    #     cgl.glGetProgramInfoLog(transform_program, 2048, &length, msg)
+    #     cdef bytes ret = msg[:length]
+    #     print(cgl.glGetError(), ret.split(b'\0')[0].decode('utf-8'))
 
-        cgl.glUseProgram(transform_program)
-        print(cgl.glGetError(), "Program in use!")
+    #     cgl.glUseProgram(transform_program)
+    #     print(cgl.glGetError(), "Program in use!")
 
-        print(cgl.glGetError(), "Generating data!")
-        cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
+    #     print(cgl.glGetError(), "Generating data!")
+    #     cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
 
-        print(cgl.glGetError(), transform_data[0])
-        print(cgl.glGetError(), transform_data[1])
-        print(cgl.glGetError(), transform_data[2])
-        print(cgl.glGetError(), transform_data[3])
-        print(cgl.glGetError(), transform_data[4])
+    #     print(cgl.glGetError(), transform_data[0])
+    #     print(cgl.glGetError(), transform_data[1])
+    #     print(cgl.glGetError(), transform_data[2])
+    #     print(cgl.glGetError(), transform_data[3])
+    #     print(cgl.glGetError(), transform_data[4])
 
-        print(cgl.glGetError(), "Building VBO")
-        cdef GLuint transform_vbo
-        cgl.glGenBuffers(1, &transform_vbo)
+    #     print(cgl.glGetError(), "Building VBO")
+    #     cdef GLuint transform_vbo
+    #     cgl.glGenBuffers(1, &transform_vbo)
     	
-        print(cgl.glGetError(), "Binding VBO")
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
+    #     print(cgl.glGetError(), "Binding VBO")
+    #     cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
 
-        BUFSIZE = 5 * 4
-        print(cgl.glGetError(), "Upload data to buffer")
-        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
+    #     BUFSIZE = 5 * 4
+    #     print(cgl.glGetError(), "Upload data to buffer")
+    #     cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
 
-        # print(cgl.glGetError(), "Checking buffer")
-        # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_ARRAY_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
-        # cgl.glUnmapBuffer(GL_ARRAY_BUFFER)
+    #     # print(cgl.glGetError(), "Checking buffer")
+    #     # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_ARRAY_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
+    #     # cgl.glUnmapBuffer(GL_ARRAY_BUFFER)
         
-        # transform_data[1] = 10
-        # print(cgl.glGetError(), transform_result[0])
-        # print(cgl.glGetError(), transform_result[1])
-        # print(cgl.glGetError(), transform_result[2])
-        # print(cgl.glGetError(), transform_result[3])
-        # print(cgl.glGetError(), transform_result[4])
+    #     # transform_data[1] = 10
+    #     # print(cgl.glGetError(), transform_result[0])
+    #     # print(cgl.glGetError(), transform_result[1])
+    #     # print(cgl.glGetError(), transform_result[2])
+    #     # print(cgl.glGetError(), transform_result[3])
+    #     # print(cgl.glGetError(), transform_result[4])
         
-        # print(cgl.glGetError(), transform_data[0])
-        # print(cgl.glGetError(), transform_data[1])
-        # print(cgl.glGetError(), transform_data[2])
-        # print(cgl.glGetError(), transform_data[3])
-        # print(cgl.glGetError(), transform_data[4])
+    #     # print(cgl.glGetError(), transform_data[0])
+    #     # print(cgl.glGetError(), transform_data[1])
+    #     # print(cgl.glGetError(), transform_data[2])
+    #     # print(cgl.glGetError(), transform_data[3])
+    #     # print(cgl.glGetError(), transform_data[4])
 
-        print(cgl.glGetError(), "Building vertex pointer")
-        cdef GLint inputAttrib = cgl.glGetAttribLocation(transform_program, "inValue")
+    #     print(cgl.glGetError(), "Building vertex pointer")
+    #     cdef GLint inputAttrib = cgl.glGetAttribLocation(transform_program, "inValue")
 
-        print(cgl.glGetError(), "Enabling vertex pointer")
-        cgl.glEnableVertexAttribArray(inputAttrib)
+    #     print(cgl.glGetError(), "Enabling vertex pointer")
+    #     cgl.glEnableVertexAttribArray(inputAttrib)
 
-        print(cgl.glGetError(), "Set vertex pointer")
-        cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
+    #     print(cgl.glGetError(), "Set vertex pointer")
+    #     cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
 
-        print(cgl.glGetError(), "Build receiving VBO")
-        cdef GLuint tbo
-        cgl.glGenBuffers(1, &tbo)
-        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_STATIC_READ)
+    #     print(cgl.glGetError(), "Build receiving VBO")
+    #     cdef GLuint tbo
+    #     cgl.glGenBuffers(1, &tbo)
+    #     cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
+    #     cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_STATIC_READ)
 
-        print(cgl.glGetError(), "Binding receiving buffer")
-        cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
+    #     print(cgl.glGetError(), "Binding receiving buffer")
+    #     cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
 
 
-        print(cgl.glGetError(), "Disabling rasterizer")
-        cgl.glEnable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Disabling rasterizer")
+    #     cgl.glEnable(GL_RASTERIZER_DISCARD)
 
-        print(cgl.glGetError(), "Going to activate Transform Feedback.")
-        cgl.glBeginTransformFeedback(GL_POINTS)
-        print(cgl.glGetError(), "Transform Feedback activated.")
+    #     print(cgl.glGetError(), "Going to activate Transform Feedback.")
+    #     cgl.glBeginTransformFeedback(GL_POINTS)
+    #     print(cgl.glGetError(), "Transform Feedback activated.")
 
-        print(cgl.glGetError(), "Draw arrays")
-        cgl.glDrawArrays(GL_POINTS, 0, 5)
+    #     print(cgl.glGetError(), "Draw arrays")
+    #     cgl.glDrawArrays(GL_POINTS, 0, 5)
 
-        print(cgl.glGetError(), "Ending Transform Feedback")
-        cgl.glEndTransformFeedback()
-        print(cgl.glGetError(), "Transform Feedback ended.")
+    #     print(cgl.glGetError(), "Ending Transform Feedback")
+    #     cgl.glEndTransformFeedback()
+    #     print(cgl.glGetError(), "Transform Feedback ended.")
         
-        print(cgl.glGetError(), "Disabling Rasterizer")
-        cgl.glDisable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Disabling Rasterizer")
+    #     cgl.glDisable(GL_RASTERIZER_DISCARD)
 
-        # cgl.glDisable(GL_RASTERIZER_DISCARD)
-        print(cgl.glGetError(), "Flushing")
-        cgl.glFlush()
+    #     # cgl.glDisable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Flushing")
+    #     cgl.glFlush()
 
-        print(cgl.glGetError(), "Fetching data")
-        cdef GLfloat feedback[5]
+    #     print(cgl.glGetError(), "Fetching data")
+    #     cdef GLfloat feedback[5]
 
-        print(cgl.glGetError(), "Copying data back to host")
+    #     print(cgl.glGetError(), "Copying data back to host")
 
-        # cdef GLfloat* buffercontent = <GLfloat*>(cgl.glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 40, GL_MAP_READ_BIT))
-        # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 80, GL_MAP_READ_BIT)
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
-        # cdef double* transform_result = <double*>malloc(8*16)
-        print(cgl.glGetError(), "Map Buffer Initialised")
-        # l = convert_to_python(a, 5)
+    #     # cdef GLfloat* buffercontent = <GLfloat*>(cgl.glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 40, GL_MAP_READ_BIT))
+    #     # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 80, GL_MAP_READ_BIT)
+    #     transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
+    #     # cdef double* transform_result = <double*>malloc(8*16)
+    #     print(cgl.glGetError(), "Map Buffer Initialised")
+    #     # l = convert_to_python(a, 5)
 
-        print(cgl.glGetError(), "Unmapping copy")
-        cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+    #     print(cgl.glGetError(), "Unmapping copy")
+    #     cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
-        print(cgl.glGetError(), "Sqrt of 1 is:", transform_result[0])
-        print(cgl.glGetError(), "Sqrt of 2 is:", transform_result[1])
-        print(cgl.glGetError(), "Sqrt of 3 is:", transform_result[2])
-        print(cgl.glGetError(), "Sqrt of 4 is:", transform_result[3])
-        print(cgl.glGetError(), "Sqrt of 5 is:", transform_result[4])
-        print(cgl.glGetError(), "Mapbufferrange! 2")
-        # print(cgl.glGetError(), l)
-        # for i in range(5):
-        #     printf("%X", *(buffercontent+i));
-        # print(cgl.glGetError(), buffercontent)
+    #     print(cgl.glGetError(), "Sqrt of 1 is:", transform_result[0])
+    #     print(cgl.glGetError(), "Sqrt of 2 is:", transform_result[1])
+    #     print(cgl.glGetError(), "Sqrt of 3 is:", transform_result[2])
+    #     print(cgl.glGetError(), "Sqrt of 4 is:", transform_result[3])
+    #     print(cgl.glGetError(), "Sqrt of 5 is:", transform_result[4])
+    #     print(cgl.glGetError(), "Mapbufferrange! 2")
+    #     # print(cgl.glGetError(), l)
+    #     # for i in range(5):
+    #     #     printf("%X", *(buffercontent+i));
+    #     # print(cgl.glGetError(), buffercontent)
 
         
-        # void glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
-        # GLboolean glUnmapBuffer(GLenum target);
+    #     # void glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+    #     # GLboolean glUnmapBuffer(GLenum target);
 
-        # ctypedef void (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
-        # ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
-        print(cgl.glGetError(), "Resetting context")
-        reset_gl_context()
-        return 0
+    #     # ctypedef void (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
+    #     # ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
+    #     print(cgl.glGetError(), "Resetting context")
+    #     reset_gl_context()
+    #     return 0
 
 
-    def transform_geometry_static_example(self):
-        cdef RenderContext rcx
-        cdef Context ctx
-        # cdef Shader shader
-        cdef GLuint transform_shader
-        cdef GLuint frag_shader
-        cdef int i
+    # def transform_geometry_static_example(self):
+    #     cdef RenderContext rcx
+    #     cdef Context ctx
+    #     # cdef Shader shader
+    #     cdef GLuint transform_shader
+    #     cdef GLuint frag_shader
+    #     cdef int i
         
-        # # Actual transform vertex shader
-        # cdef char* vertsource = """#version 320 es
+    #     # # Actual transform vertex shader
+    #     # cdef char* vertsource = """#version 320 es
 
-        #     #ifdef GL_ES
-        #     precision mediump float;
-        #     #endif
+    #     #     #ifdef GL_ES
+    #     #     precision mediump float;
+    #     #     #endif
 
-        #     in float inValue;
+    #     #     in float inValue;
 
-        #     out VS_OUT{
-        #         float geoValue;
-        #     }vs_out;
+    #     #     out VS_OUT{
+    #     #         float geoValue;
+    #     #     }vs_out;
 
-        #     void main()
-        #     {
-        #         vs_out.geoValue = sqrt(inValue);
-        #     }"""
+    #     #     void main()
+    #     #     {
+    #     #         vs_out.geoValue = sqrt(inValue);
+    #     #     }"""
 
-        # # Actual transform geometry shader
-        # cdef char* geosource = """#version 320 es
+    #     # # Actual transform geometry shader
+    #     # cdef char* geosource = """#version 320 es
 
-        #     #ifdef GL_ES
-        #     precision mediump float;
-        #     #endif
+    #     #     #ifdef GL_ES
+    #     #     precision mediump float;
+    #     #     #endif
 
-        #     layout(points)in;
-        #     layout(triangle_strip,max_vertices=3)out;
+    #     #     layout(points)in;
+    #     #     layout(triangle_strip,max_primitives=3)out;
 
 
-        #     in VS_OUT{
-        #         float geoValue;
-        #     }gs_in[];
+    #     #     in VS_OUT{
+    #     #         float geoValue;
+    #     #     }gs_in[];
 
-        #     out float outValue;
+    #     #     out float outValue;
 
-        #     void main()
-        #     {
-        #         for (int i = 0; i < 3; i++) {
-        #             outValue = gs_in[0].geoValue + float(i);
-        #             EmitVertex();
-        #         }
+    #     #     void main()
+    #     #     {
+    #     #         for (int i = 0; i < 3; i++) {
+    #     #             outValue = gs_in[0].geoValue + float(i);
+    #     #             EmitVertex();
+    #     #         }
 
-        #         EndPrimitive();
-        #     }
-        #     """
-        # # Required for Android
-        # cdef char* fragsource = """#version 320 es
+    #     #         EndPrimitive();
+    #     #     }
+    #     #     """
+    #     # # Required for Android
+    #     # cdef char* fragsource = """#version 320 es
 
-        #     #ifdef GL_ES
-        #     precision mediump float;
-        #     #endif
+    #     #     #ifdef GL_ES
+    #     #     precision mediump float;
+    #     #     #endif
 
-        #     out vec4 fragColor;
+    #     #     out vec4 fragColor;
 
-        #     void main() {
-        #       fragColor = vec4(1.0,1.0,1.0,1.0);
-        #     }"""
+    #     #     void main() {
+    #     #       fragColor = vec4(1.0,1.0,1.0,1.0);
+    #     #     }"""
 
-        cdef bytes vertbytes = default_transform_vs.encode('utf-8')
-        cdef bytes geobytes = default_transform_gs.encode('utf-8')
-        cdef bytes fragbytes = default_transform_fs.encode('utf-8')
+    #     cdef bytes vertbytes = default_transform_vs.encode('utf-8')
+    #     cdef bytes geobytes = default_transform_gs.encode('utf-8')
+    #     cdef bytes fragbytes = default_transform_fs.encode('utf-8')
 
-        cdef char* vertsource = <char*> vertbytes
-        cdef char* geosource = <char*> geobytes
-        cdef char* fragsource = <char*> fragbytes
+    #     cdef char* vertsource = <char*> vertbytes
+    #     cdef char* geosource = <char*> geobytes
+    #     cdef char* fragsource = <char*> fragbytes
 
-        print("Using file sources for static geo!")
+    #     print("Using file sources for static geo!")
 
-        print(cgl.glGetError(), vertsource)
-        print(cgl.glGetError(), "Building the Transform Feedback Vertex shader.")
-        transform_shader = cgl.glCreateShader(GL_VERTEX_SHADER)
-        cgl.glShaderSource(transform_shader, 1, <const_char_ptr*> &vertsource, NULL)
-        cgl.glCompileShader(transform_shader)
-        print(cgl.glGetError(), "Transform Feedback Vertex shader has been built and compiled.")
+    #     print(cgl.glGetError(), vertsource)
+    #     print(cgl.glGetError(), "Building the Transform Feedback Vertex shader.")
+    #     transform_shader = cgl.glCreateShader(GL_VERTEX_SHADER)
+    #     cgl.glShaderSource(transform_shader, 1, <const_char_ptr*> &vertsource, NULL)
+    #     cgl.glCompileShader(transform_shader)
+    #     print(cgl.glGetError(), "Transform Feedback Vertex shader has been built and compiled.")
 
-        print(cgl.glGetError(), "Building the Transform Feedback Geometry shader.")
-        g_transform_shader = cgl.glCreateShader(GL_GEOMETRY_SHADER)
-        cgl.glShaderSource(g_transform_shader, 1, <const_char_ptr*> &geosource, NULL)
-        cgl.glCompileShader(g_transform_shader)
-        print(cgl.glGetError(), "Transform Feedback Geometry shader has been built and compiled.")
+    #     print(cgl.glGetError(), "Building the Transform Feedback Geometry shader.")
+    #     g_transform_shader = cgl.glCreateShader(GL_GEOMETRY_SHADER)
+    #     cgl.glShaderSource(g_transform_shader, 1, <const_char_ptr*> &geosource, NULL)
+    #     cgl.glCompileShader(g_transform_shader)
+    #     print(cgl.glGetError(), "Transform Feedback Geometry shader has been built and compiled.")
 
-        print(cgl.glGetError(), "Building the Transform Feedback Fragment shader.")
-        f_transform_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
-        cgl.glShaderSource(f_transform_shader, 1, <const_char_ptr*> &fragsource, NULL)
-        cgl.glCompileShader(f_transform_shader)
-        print(cgl.glGetError(), "Transform Feedback Fragment shader has been built and compiled.")
+    #     print(cgl.glGetError(), "Building the Transform Feedback Fragment shader.")
+    #     f_transform_shader = cgl.glCreateShader(GL_FRAGMENT_SHADER)
+    #     cgl.glShaderSource(f_transform_shader, 1, <const_char_ptr*> &fragsource, NULL)
+    #     cgl.glCompileShader(f_transform_shader)
+    #     print(cgl.glGetError(), "Transform Feedback Fragment shader has been built and compiled.")
 
-        print(cgl.glGetError(), "Building program.")
-        cdef GLuint transform_program = cgl.glCreateProgram()
-        print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
-        cgl.glAttachShader(transform_program, transform_shader)
-        print(cgl.glGetError(), "Vertex attachment succesful.")
-        cgl.glAttachShader(transform_program, g_transform_shader)
-        print(cgl.glGetError(), "Geometry attachment succesful.")
-        cgl.glAttachShader(transform_program, f_transform_shader)
-        print(cgl.glGetError(), "Fragment attachment succesful.")
+    #     print(cgl.glGetError(), "Building program.")
+    #     cdef GLuint transform_program = cgl.glCreateProgram()
+    #     print(cgl.glGetError(), f"Attaching shader. Program: {transform_program}")
+    #     cgl.glAttachShader(transform_program, transform_shader)
+    #     print(cgl.glGetError(), "Vertex attachment succesful.")
+    #     cgl.glAttachShader(transform_program, g_transform_shader)
+    #     print(cgl.glGetError(), "Geometry attachment succesful.")
+    #     cgl.glAttachShader(transform_program, f_transform_shader)
+    #     print(cgl.glGetError(), "Fragment attachment succesful.")
         
-        print(cgl.glGetError(), "Defining varyings")
-        cdef GLchar** feedbackVaryings = [ "outValue" ]
-        print(cgl.glGetError(), "Building varyings")
-        cgl.glTransformFeedbackVaryings(transform_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
-        print(cgl.glGetError(), "Varyings built!")
+    #     print(cgl.glGetError(), "Defining varyings")
+    #     cdef GLchar** feedbackVaryings = [ "outValue" ]
+    #     print(cgl.glGetError(), "Building varyings")
+    #     cgl.glTransformFeedbackVaryings(transform_program, 4, feedbackVaryings, GL_INTERLEAVED_ATTRIBS)
+    #     print(cgl.glGetError(), "Varyings built!")
 
-        print(cgl.glGetError(), "Linking program")
-        cgl.glLinkProgram(transform_program)
-        print(cgl.glGetError(), "Program linked!")
+    #     print(cgl.glGetError(), "Linking program")
+    #     cgl.glLinkProgram(transform_program)
+    #     print(cgl.glGetError(), "Program linked!")
 
-        cdef char msg[2048]
-        cdef GLsizei length
-        msg[0] = b'\0'
-        cgl.glGetProgramInfoLog(transform_program, 2048, &length, msg)
-        cdef bytes ret = msg[:length]
-        print(cgl.glGetError(), ret.split(b'\0')[0].decode('utf-8'))
+    #     cdef char msg[2048]
+    #     cdef GLsizei length
+    #     msg[0] = b'\0'
+    #     cgl.glGetProgramInfoLog(transform_program, 2048, &length, msg)
+    #     cdef bytes ret = msg[:length]
+    #     print(cgl.glGetError(), ret.split(b'\0')[0].decode('utf-8'))
 
-        cgl.glUseProgram(transform_program)
-        print(cgl.glGetError(), "Program in use!")
+    #     cgl.glUseProgram(transform_program)
+    #     print(cgl.glGetError(), "Program in use!")
 
-        print(cgl.glGetError(), "Generating data!")
-        cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
+    #     print(cgl.glGetError(), "Generating data!")
+    #     cdef GLfloat* transform_data = [1.0, 2.0, 3.0, 4.0, 5.0]
 
-        print(cgl.glGetError(), transform_data[0])
-        print(cgl.glGetError(), transform_data[1])
-        print(cgl.glGetError(), transform_data[2])
-        print(cgl.glGetError(), transform_data[3])
-        print(cgl.glGetError(), transform_data[4])
+    #     print(cgl.glGetError(), transform_data[0])
+    #     print(cgl.glGetError(), transform_data[1])
+    #     print(cgl.glGetError(), transform_data[2])
+    #     print(cgl.glGetError(), transform_data[3])
+    #     print(cgl.glGetError(), transform_data[4])
 
-        print(cgl.glGetError(), "Building VBO")
-        cdef GLuint transform_vbo
-        cgl.glGenBuffers(1, &transform_vbo)
+    #     print(cgl.glGetError(), "Building VBO")
+    #     cdef GLuint transform_vbo
+    #     cgl.glGenBuffers(1, &transform_vbo)
     	
-        print(cgl.glGetError(), "Binding VBO")
-        cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
+    #     print(cgl.glGetError(), "Binding VBO")
+    #     cgl.glBindBuffer(GL_ARRAY_BUFFER, transform_vbo)
 
-        BUFSIZE = 5 * 4
-        print(cgl.glGetError(), "Upload data to buffer")
-        cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
+    #     BUFSIZE = 5 * 4
+    #     print(cgl.glGetError(), "Upload data to buffer")
+    #     cgl.glBufferData(GL_ARRAY_BUFFER, BUFSIZE, transform_data, GL_STATIC_READ) # GL_STATIC_DRAW
 
-        # print(cgl.glGetError(), "Checking buffer")
-        # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_ARRAY_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
-        # cgl.glUnmapBuffer(GL_ARRAY_BUFFER)
+    #     # print(cgl.glGetError(), "Checking buffer")
+    #     # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_ARRAY_BUFFER, 0, BUFSIZE, GL_MAP_READ_BIT)
+    #     # cgl.glUnmapBuffer(GL_ARRAY_BUFFER)
         
-        # transform_data[1] = 10
-        # print(cgl.glGetError(), transform_result[0])
-        # print(cgl.glGetError(), transform_result[1])
-        # print(cgl.glGetError(), transform_result[2])
-        # print(cgl.glGetError(), transform_result[3])
-        # print(cgl.glGetError(), transform_result[4])
+    #     # transform_data[1] = 10
+    #     # print(cgl.glGetError(), transform_result[0])
+    #     # print(cgl.glGetError(), transform_result[1])
+    #     # print(cgl.glGetError(), transform_result[2])
+    #     # print(cgl.glGetError(), transform_result[3])
+    #     # print(cgl.glGetError(), transform_result[4])
         
-        # print(cgl.glGetError(), transform_data[0])
-        # print(cgl.glGetError(), transform_data[1])
-        # print(cgl.glGetError(), transform_data[2])
-        # print(cgl.glGetError(), transform_data[3])
-        # print(cgl.glGetError(), transform_data[4])
+    #     # print(cgl.glGetError(), transform_data[0])
+    #     # print(cgl.glGetError(), transform_data[1])
+    #     # print(cgl.glGetError(), transform_data[2])
+    #     # print(cgl.glGetError(), transform_data[3])
+    #     # print(cgl.glGetError(), transform_data[4])
 
-        print(cgl.glGetError(), "Building vertex pointer")
-        cdef GLint inputAttrib = cgl.glGetAttribLocation(transform_program, "inValue")
+    #     print(cgl.glGetError(), "Building vertex pointer")
+    #     cdef GLint inputAttrib = cgl.glGetAttribLocation(transform_program, "inValue")
 
-        print(cgl.glGetError(), "Enabling vertex pointer")
-        cgl.glEnableVertexAttribArray(inputAttrib)
+    #     print(cgl.glGetError(), "Enabling vertex pointer")
+    #     cgl.glEnableVertexAttribArray(inputAttrib)
 
-        print(cgl.glGetError(), "Set vertex pointer")
-        cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
+    #     print(cgl.glGetError(), "Set vertex pointer")
+    #     cgl.glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
 
-        print(cgl.glGetError(), "Build receiving VBO")
-        cdef GLuint tbo
-        cgl.glGenBuffers(1, &tbo)
-        cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_STATIC_READ)
+    #     print(cgl.glGetError(), "Build receiving VBO")
+    #     cdef GLuint tbo
+    #     cgl.glGenBuffers(1, &tbo)
+    #     cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tbo)
+    #     cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE*3, NULL, GL_STATIC_READ)
 
-        print(cgl.glGetError(), "Binding receiving buffer")
-        cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
+    #     print(cgl.glGetError(), "Binding receiving buffer")
+    #     cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo)
 
 
-        print(cgl.glGetError(), "Disabling rasterizer")
-        cgl.glEnable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Disabling rasterizer")
+    #     cgl.glEnable(GL_RASTERIZER_DISCARD)
 
-        print(cgl.glGetError(), "Going to activate Transform Feedback.")
-        cgl.glBeginTransformFeedback(GL_TRIANGLES)
-        print(cgl.glGetError(), "Transform Feedback activated.")
+    #     print(cgl.glGetError(), "Going to activate Transform Feedback.")
+    #     cgl.glBeginTransformFeedback(GL_TRIANGLES)
+    #     print(cgl.glGetError(), "Transform Feedback activated.")
 
-        print(cgl.glGetError(), "Draw arrays")
-        cgl.glDrawArrays(GL_POINTS, 0, 5)
+    #     print(cgl.glGetError(), "Draw arrays")
+    #     cgl.glDrawArrays(GL_POINTS, 0, 5)
 
-        print(cgl.glGetError(), "Ending Transform Feedback")
-        cgl.glEndTransformFeedback()
-        print(cgl.glGetError(), "Transform Feedback ended.")
+    #     print(cgl.glGetError(), "Ending Transform Feedback")
+    #     cgl.glEndTransformFeedback()
+    #     print(cgl.glGetError(), "Transform Feedback ended.")
         
-        print(cgl.glGetError(), "Disabling Rasterizer")
-        cgl.glDisable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Disabling Rasterizer")
+    #     cgl.glDisable(GL_RASTERIZER_DISCARD)
 
-        # cgl.glDisable(GL_RASTERIZER_DISCARD)
-        print(cgl.glGetError(), "Flushing")
-        cgl.glFlush()
+    #     # cgl.glDisable(GL_RASTERIZER_DISCARD)
+    #     print(cgl.glGetError(), "Flushing")
+    #     cgl.glFlush()
 
-        print(cgl.glGetError(), "Fetching data")
-        cdef GLfloat feedback[5*3]
+    #     print(cgl.glGetError(), "Fetching data")
+    #     cdef GLfloat feedback[5*3]
 
-        print(cgl.glGetError(), "Copying data back to host")
+    #     print(cgl.glGetError(), "Copying data back to host")
 
-        # cdef GLfloat* buffercontent = <GLfloat*>(cgl.glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 40, GL_MAP_READ_BIT))
-        # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 80, GL_MAP_READ_BIT)
-        transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE*3, GL_MAP_READ_BIT)
-        # cdef double* transform_result = <double*>malloc(8*16)
-        print(cgl.glGetError(), "Map Buffer Initialised")
-        # l = convert_to_python(a, 5)
+    #     # cdef GLfloat* buffercontent = <GLfloat*>(cgl.glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 40, GL_MAP_READ_BIT))
+    #     # cdef GLfloat* transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 80, GL_MAP_READ_BIT)
+    #     transform_result = <GLfloat*>cgl.glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, BUFSIZE*3, GL_MAP_READ_BIT)
+    #     # cdef double* transform_result = <double*>malloc(8*16)
+    #     print(cgl.glGetError(), "Map Buffer Initialised")
+    #     # l = convert_to_python(a, 5)
 
-        print(cgl.glGetError(), "Unmapping copy")
-        cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
+    #     print(cgl.glGetError(), "Unmapping copy")
+    #     cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
-        for i in range(15):
-            print(cgl.glGetError(), f"{i}:", transform_result[i])
-        print(cgl.glGetError(), "Mapbufferrange! 2")
-        # print(cgl.glGetError(), l)
-        # for i in range(5):
-        #     printf("%X", *(buffercontent+i));
-        # print(cgl.glGetError(), buffercontent)
+    #     for i in range(15):
+    #         print(cgl.glGetError(), f"{i}:", transform_result[i])
+    #     print(cgl.glGetError(), "Mapbufferrange! 2")
+    #     # print(cgl.glGetError(), l)
+    #     # for i in range(5):
+    #     #     printf("%X", *(buffercontent+i));
+    #     # print(cgl.glGetError(), buffercontent)
 
         
-        # void glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
-        # GLboolean glUnmapBuffer(GLenum target);
+    #     # void glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+    #     # GLboolean glUnmapBuffer(GLenum target);
 
-        # ctypedef void (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
-        # ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
-        print(cgl.glGetError(), "Resetting context")
-        reset_gl_context()
-        return 0
+    #     # ctypedef void (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
+    #     # ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum)
+    #     print(cgl.glGetError(), "Resetting context")
+    #     reset_gl_context()
+    #     return 0

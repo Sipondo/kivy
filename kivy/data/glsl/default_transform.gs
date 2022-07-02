@@ -5,7 +5,7 @@ precision mediump float;
 #endif
 
 layout(points)in;
-layout(triangle_strip,max_vertices=3)out;
+layout(points,max_vertices=3)out;
 
 in VS_OUT{
     float geoValue;
