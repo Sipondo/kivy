@@ -1088,17 +1088,17 @@ cdef class TransformFeedback(ObjectWithUid):
         for key, stack in self.state_stacks.iteritems():
             self.set_state(key, stack[0])
 
-    cdef void set_state(self, str name, value, int apply_now=0):
+    cdef void set_state(self, str name, value, int apply_now=1):
         # Upload the uniform value to the shader
-        cdef list d
-        if name not in self.state_stacks:
-            self.state_stacks[name] = [value]
-            self.flag_update()
-        else:
-            d = self.state_stacks[name]
-            if value != d[-1]:
-                d[-1] = value
-                self.flag_update()
+        # cdef list d
+        # if name not in self.state_stacks:
+        #     self.state_stacks[name] = [value]
+        #     self.flag_update()
+        # else:
+        #     d = self.state_stacks[name]
+        #     if value != d[-1]:
+        #         d[-1] = value
+        #         self.flag_update()
         self._shader.set_uniform(name, value)
 
     cdef get_state(self, str name):
