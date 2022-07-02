@@ -1209,7 +1209,7 @@ cdef class TransformFeedback(ObjectWithUid):
         cdef GLuint* primitives = [0]
         cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
         self.print_debug(debug, cgl.glGetError(), "Primitives:", primitives[0])
-        ACTUAL_BUFSIZE = BUFCOUNT * primitives[0] * 4 * vertex_format.vsize
+        ACTUAL_BUFSIZE = primitives[0] * 4 * vertex_format.vsize
 
         self.print_debug(debug, cgl.glGetError(), "Actual BUFSIZE:", ACTUAL_BUFSIZE)
 
