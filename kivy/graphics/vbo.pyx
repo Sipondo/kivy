@@ -155,6 +155,10 @@ cdef class VBO:
     @property
     def gvertex_format(self):
         return self.vertex_format
+
+    @property
+    def gtf(self):
+        return self.is_transform_feedback
     
     def set_transform_feedback(self, i):
         self.is_transform_feedback=i
@@ -255,8 +259,13 @@ cdef class VertexBatch:
         self.vbo.bind()
 
         # draw the elements pointed by indices in ELEMENT ARRAY BUFFER.
-        cgl.glDrawElements(self.mode, count, GL_UNSIGNED_SHORT, NULL)
-        log_gl_error('VertexBatch.draw-glDrawElements')
+        # TODO: remove this dumb hack
+        if self.gvbo.gtf:
+            cgl.glDrawArrays(self.mode, 0, count)
+            log_gl_error('VertexBatch.draw-glDrawArrays')
+        else:
+            cgl.glDrawElements(self.mode, count, GL_UNSIGNED_SHORT, NULL)
+            log_gl_error('VertexBatch.draw-glDrawElements')
 
     cdef void set_mode(self, str mode):
         # most common case in top;
@@ -326,3 +335,10 @@ cdef class VertexBatch:
     @property
     def gelements(self):
         return self.elements
+
+    def buffer_update(self):
+        cgl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.elements.size(),
+            self.elements.pointer(), self.usage)
+        self.elements_size = self.elements.size()
+        log_gl_error('VertexBatch.draw-glBufferData')
+        self.flags &= ~V_NEEDUPLOAD

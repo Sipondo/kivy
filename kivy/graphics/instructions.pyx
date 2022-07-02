@@ -1165,6 +1165,10 @@ cdef class TransformFeedback(ObjectWithUid):
         BUFCOUNT = input_count
         BUFSIZE = BUFCOUNT * self.max_primitives * 4 * vertex_format.vsize
 
+        # vi_to.indices = list(range(BUFCOUNT * self.max_primitives))
+        # vi_to.gbatch.buffer_update()
+
+
         vi_to.gbatch.gvbo.set_transform_feedback(1)
 
         self.print_debug(debug, "BUFSIZE:", BUFSIZE)
@@ -1241,6 +1245,7 @@ cdef class TransformFeedback(ObjectWithUid):
         self.print_debug(debug, cgl.glGetError(), "Context reset")
 
         vi_to.indices = list(range(primitives[0]))
+        # vi_to.gbatch.buffer_update()
 
         return primitives[0]
 
