@@ -1067,16 +1067,19 @@ cdef class TransformFeedback(ObjectWithUid):
 
         self.max_primitives = kwargs.get('max_primitives', 3)
         self.in_format = kwargs.get('in_format', [(b'inValue', 1, 'float'),])
-        self.out_varyings = kwargs.get('out_varyings ', [ "outValue"])
+        self.out_varyings = kwargs.get('out_varyings', [ "outValue"])
 
         if vs_src is None:
             vs_src = default_transform_vs
-        if gs_src is None:
-            gs_src = default_transform_gs
+        # if gs_src is None:
+        #     gs_src = default_transform_gs
         if fs_src is None:
             fs_src = default_transform_fs
         
-        self._shader = Shader(vs_src, gs_src, fs_src, is_transform_feedback=1)
+        if gs_src is None:
+            self._shader = Shader(vs_src, None, fs_src, is_transform_feedback=1)
+        else:
+            self._shader = Shader(vs_src, gs_src, fs_src, is_transform_feedback=1)
 
         self._shader.set_varyings( self.out_varyings )
 
