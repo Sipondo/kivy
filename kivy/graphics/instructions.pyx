@@ -1171,14 +1171,17 @@ cdef class TransformFeedback(ObjectWithUid):
         # vi_to.indices = list(range(BUFCOUNT * self.max_primitives))
         # vi_to.gbatch.buffer_update()
 
+        self.print_debug(debug, cgl.glGetError(), "Build receiving VBO")
 
         vi_to.gbatch.gvbo.set_transform_feedback(1)
+
+        self.print_debug(debug, cgl.glGetError(), "Set batch transform feedback flag")
 
         self.print_debug(debug, "BUFSIZE:", BUFSIZE)
         self._shader.bind_vertex_format(vertex_format)
 
 
-        self.print_debug(debug, cgl.glGetError(), "Build receiving VBO")
+        self.print_debug(debug, cgl.glGetError(), "Bound vertex format")
 
         cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, vi_to.gbatch.gvbo.gid)
         cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_DYNAMIC_DRAW)
