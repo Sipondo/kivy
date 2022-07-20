@@ -387,6 +387,8 @@ cdef extern from "gl_redirect.h":
     int GL_MAP_READ_BIT
     int GL_QUERY_RESULT
     int GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN
+    int GL_PRIMITIVES_GENERATED
+    int GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT
 
 ctypedef const GLubyte* (__stdcall *GLGETSTRINGPTR)(GLenum) nogil
 ctypedef GLboolean (__stdcall *GLISBUFFERPTR)(GLuint buffer) nogil
@@ -410,6 +412,7 @@ ctypedef void (__stdcall *GLENDTRANSFORMFEEDBACK)() nogil
 ctypedef void (__stdcall *GLTRANSFORMFEEDBACKVARYINGS)(GLuint, GLsizei, const GLchar *const *varyings, GLenum) nogil
 ctypedef void (__stdcall *GLGETTRANSFORMFEEDBACKVARYING)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name) nogil
 ctypedef void (__stdcall *GLBINDBUFFERBASE)(GLenum, GLuint, GLuint) nogil
+ctypedef void (__stdcall *GLBINDBUFFERRANGE)(GLenum, GLuint, GLuint, GLintptr, GLsizeiptr) nogil
 ctypedef void* (__stdcall *GLMAPBUFFERRANGE)(GLenum, GLintptr, GLsizeiptr, GLbitfield) nogil
 ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum) nogil
 ctypedef void (__stdcall *GLBEGINQUERY)(GLenum, GLuint) nogil
@@ -553,7 +556,8 @@ ctypedef struct GLES2_Context:
     void (__stdcall *glEndTransformFeedback)() nogil
     void (__stdcall *glTransformFeedbackVaryings)(GLuint, GLsizei, const GLchar *const *varyings, GLenum) nogil
     void (__stdcall *glGetTransformFeedbackVarying)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name) nogil
-    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint)
+    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint) nogil
+    void (__stdcall *glBindBufferRange)(GLenum, GLuint, GLuint, GLintptr, GLsizeiptr) nogil
     void* (__stdcall *glMapBufferRange)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
     GLboolean (__stdcall *glUnmapBuffer)(GLenum)
     void (__stdcall *glBeginQuery)(GLenum, GLuint) nogil

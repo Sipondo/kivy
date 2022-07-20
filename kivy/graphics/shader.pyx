@@ -221,9 +221,9 @@ cdef class Shader:
         cdef uint64_t[:] ca = a
         cdef GLchar ** final_ptr = <char **>&ca[0]
 
-        # print(cgl.glGetError(), "Building varyings")
-        cgl.glTransformFeedbackVaryings(self.program, 1, final_ptr, GL_INTERLEAVED_ATTRIBS)
-        # print(cgl.glGetError(), "Varyings built!")
+        print(cgl.glGetError(), "Building varyings")
+        cgl.glTransformFeedbackVaryings(self.program, len(fmt), final_ptr, GL_INTERLEAVED_ATTRIBS)
+        print(cgl.glGetError(), "Varyings built!")
         self.link_program()
 
     cdef void reload(self):

@@ -138,6 +138,8 @@ cdef void log_cgl_funcs() except *:
         Logger.debug('GL: glGetTransformFeedbackVarying is not available')
     if cgl.glBindBufferBase == NULL:
         Logger.debug('GL: glBindBufferBase is not available')
+    if cgl.glBindBufferRange == NULL:
+        Logger.debug('GL: glBindBufferRange is not available')
     if cgl.glMapBufferRange == NULL:
         Logger.debug('GL: glMapBufferRange is not available')
     if cgl.glUnmapBuffer == NULL:

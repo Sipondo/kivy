@@ -30,7 +30,8 @@ cdef extern from "gl_redirect.h":
     void (__stdcall *glEndTransformFeedback)() nogil
     void (__stdcall *glTransformFeedbackVaryings)(GLuint, GLsizei, const GLchar *const *varyings, GLenum) nogil
     void (__stdcall *glGetTransformFeedbackVarying)(GLuint, GLuint, GLsizei, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name) nogil
-    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint)
+    void (__stdcall *glBindBufferBase)(GLenum, GLuint, GLuint) nogil
+    void (__stdcall *glBindBufferRange)(GLenum, GLuint, GLuint, GLintptr, GLsizeiptr) nogil
     void* (__stdcall *glMapBufferRange)(GLenum, GLintptr, GLsizeiptr, GLbitfield)
     GLboolean (__stdcall *glUnmapBuffer)(GLenum)
     void (__stdcall *glBeginQuery)(GLenum, GLuint) nogil
@@ -177,6 +178,7 @@ cpdef link_static():
         cgl.glTransformFeedbackVaryings = glTransformFeedbackVaryings
         cgl.glGetTransformFeedbackVarying = glGetTransformFeedbackVarying
         cgl.glBindBufferBase = glBindBufferBase
+        cgl.glBindBufferRange = glBindBufferRange
         cgl.glMapBufferRange = glMapBufferRange
         cgl.glUnmapBuffer = glUnmapBuffer
         cgl.glBeginQuery = glBeginQuery
