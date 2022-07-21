@@ -548,6 +548,7 @@ cdef class Shader:
         cdef int i
         cdef vertex_attr_t *attr
         cdef bytes name
+        cdef int offset = 0
 
         # print("BIND VERTEX FORMAT!")
 
@@ -586,8 +587,8 @@ cdef class Shader:
                 
                 if self._is_transform_feedback:
                     # print(cgl.glGetError(), "Setting vertex pointer")
-                    cgl.glVertexAttribPointer(attr.index, attr.size, GL_FLOAT, GL_FALSE,  <GLsizei>0, <GLvoid*><unsigned int>0) # 0
-
+                    cgl.glVertexAttribPointer(attr.index, attr.size, GL_FLOAT, GL_FALSE,  <GLsizei>vertex_format.vbytesize, <GLvoid*><unsigned int>offset) # 0
+                    offset += attr.bytesize
                     # print(cgl.glGetError(), "Vertex pointer set")
 
         # save for the next run.

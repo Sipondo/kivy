@@ -1147,13 +1147,17 @@ cdef class TransformFeedback(ObjectWithUid):
         return self._shader
 
     def print_debug(self, debug, *args):
-        if debug:
+        if debug%2:
             print(*args)
 
-    def transform(self, vi_from, vi_to, input_count, offset=0, debug=0):
+    def transform(self, vi_from, vi_to, input_count, clear=False, out_size=-1, offset=0, debug=0):
         # vertex_format = VertexFormat( (b'inValue', 1, 'float'),)
         vertex_format = VertexFormat( *self.in_format )
         
+        if out_size == -1:
+            out_size = vertex_format.vsize
+
+        self.print_debug(debug, cgl.glGetError(), "Vertex Format Size/Outsize:", vertex_format.vsize, out_size)
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback with input:", input_count)
         self.print_debug(debug, cgl.glGetError(), "RECEIVING DATA", vi_to.gbatch.gvbo.gsize, vi_to.gbatch.gvbo.gdsize)
         log_gl_error("Starting transform fedback")
@@ -1166,7 +1170,7 @@ cdef class TransformFeedback(ObjectWithUid):
         self.print_debug(debug, cgl.glGetError(), "Binding VBO")
         cgl.glBindBuffer(GL_ARRAY_BUFFER, vi_from.gbatch.gvbo.gid)
 
-        BUFSIZE = input_count * self.max_primitives * 4 * vertex_format.vsize
+        BUFSIZE = input_count * self.max_primitives * 4 * out_size
 
         # vi_to.indices = list(range(input_count * self.max_primitives))
         # vi_to.gbatch.buffer_update()
@@ -1189,13 +1193,15 @@ cdef class TransformFeedback(ObjectWithUid):
         self.print_debug(debug, cgl.glGetError(), "Bound receiving buffer")
 
         # blanks the data
-        cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_DYNAMIC_DRAW)
+        if clear:
+            cgl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, BUFSIZE, NULL, GL_DYNAMIC_DRAW)
 
         cgl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0)
         self.print_debug(debug, cgl.glGetError(), "Initialised receiving buffer data")
         # if offset>0:
-        print("IM USING RANGE")
+        # print("IM USING RANGE")
         cgl.glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid, offset, BUFSIZE)
+        # cgl.glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid, 0, BUFSIZE)
         # else:
         # cgl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vi_to.gbatch.gvbo.gid)
 
@@ -1232,7 +1238,7 @@ cdef class TransformFeedback(ObjectWithUid):
         cdef GLuint* primitives = [0]
         cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
         self.print_debug(debug, cgl.glGetError(), "Primitives:", primitives[0])
-        ACTUAL_BUFSIZE = primitives[0] * 4 * vertex_format.vsize
+        ACTUAL_BUFSIZE = primitives[0] * 4 * out_size
 
         self.print_debug(debug, cgl.glGetError(), "Actual BUFSIZE:", ACTUAL_BUFSIZE)
 
@@ -1257,7 +1263,8 @@ cdef class TransformFeedback(ObjectWithUid):
             cgl.glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER)
 
             for i in range(ACTUAL_BUFSIZE // 4):
-                self.print_debug(debug, cgl.glGetError(), f"{i}:", transform_result[i])
+                # self.print_debug(debug, cgl.glGetError(), f"{i}:", transform_result[i])
+                print(f"\t{i}:", transform_result[i])
             self.print_debug(debug, cgl.glGetError(), "Mapbufferrange! 2")
 
         self.print_debug(debug, cgl.glGetError(), "Resetting context")
@@ -1266,7 +1273,7 @@ cdef class TransformFeedback(ObjectWithUid):
         reset_gl_context()
         self.print_debug(debug, cgl.glGetError(), "Context reset")
 
-        vi_to.indices = list(range(int(primitives[0]+offset // vertex_format.vsize // 4 // 16)))
+        vi_to.indices = list(range(int(primitives[0]+offset // out_size // 4)))
         # vi_to.gbatch.buffer_update()
 
         return primitives[0]
