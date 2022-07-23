@@ -6,8 +6,8 @@ import os
 cdef int env_debug_gl = "DEBUG_GL" in os.environ
 
 cdef inline void log_gl_error(str note):
-    # if env_debug_gl:
-    if True:
+    if env_debug_gl:
+    # if True:
         ret = cgl.glGetError()
         if ret:
             Logger.error("OpenGL Error: {note} {ret1} / {ret2}".format(

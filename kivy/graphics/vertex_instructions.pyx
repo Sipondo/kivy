@@ -430,6 +430,7 @@ cdef class MeshView(VertexInstruction):
     @gbatch.setter
     def gbatch(self, batch):
         self.batch = batch
+    
 
 
 
