@@ -1221,7 +1221,7 @@ cdef class TransformFeedback(ObjectWithUid):
         self.print_debug(debug, cgl.glGetError(), "Vertex Format Size/Outsize:", vertex_format.vsize, out_size)
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback with input:", input_count)
         self.print_debug(debug, cgl.glGetError(), "RECEIVING DATA", vi_to.gbatch.gvbo.gsize, vi_to.gbatch.gvbo.gdsize)
-        log_gl_error("Starting transform fedback")
+        log_gl_error("Starting transform feedback")
         self.print_debug(debug, cgl.glGetError(), "Starting transform feedback!")
         reset_gl_context()
         self.print_debug(debug, cgl.glGetError(), "Context reset!")
@@ -1280,13 +1280,16 @@ cdef class TransformFeedback(ObjectWithUid):
         cgl.glBeginTransformFeedback(GL_POINTS)
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback activated.")
 
+        self.print_debug(debug, cgl.glGetError(), "PRE:SENDING BUFFER INFO:", vi_from.gbatch.gvbo)
+        self.print_debug(debug, cgl.glGetError(), "PRE: RECEIVING BUFFER INFO:", vi_to.gbatch.gvbo)
+
         self.print_debug(debug, cgl.glGetError(), "Draw arrays")
         cgl.glDrawArrays(GL_POINTS, 0, input_count)
         # cgl.glDrawElements(GL_POINTS, input_count, GL_UNSIGNED_SHORT, <GLvoid*> 0) # doesn't work
         self.print_debug(debug, cgl.glGetError(), "GCOUNT:", BUFSIZE)
 
-        self.print_debug(debug, cgl.glGetError(), "SENDING BUFFER INFO:", vi_from.gbatch.gvbo)
-        self.print_debug(debug, cgl.glGetError(), "RECEIVING BUFFER INFO:", vi_to.gbatch.gvbo)
+        self.print_debug(debug, cgl.glGetError(), "POST: SENDING BUFFER INFO:", vi_from.gbatch.gvbo)
+        self.print_debug(debug, cgl.glGetError(), "POST: RECEIVING BUFFER INFO:", vi_to.gbatch.gvbo)
         self.print_debug(debug, cgl.glGetError(), "Ending Transform Feedback")
         cgl.glEndTransformFeedback()
         self.print_debug(debug, cgl.glGetError(), "Transform Feedback ended.")
