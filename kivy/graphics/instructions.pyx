@@ -1198,6 +1198,7 @@ cdef class TransformFeedback(ObjectWithUid):
         cgl.glGetQueryObjectuiv(query, GL_QUERY_RESULT, primitives)
         ACTUAL_BUFSIZE = primitives[0] * 4 * out_size
 
+        cgl.glDeleteQueries(1, &query)
         cgl.glDisable(GL_RASTERIZER_DISCARD)
 
         cgl.glFlush()
