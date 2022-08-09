@@ -1212,6 +1212,7 @@ cdef class TransformFeedback(ObjectWithUid):
 
     def transform_debug(self, vi_from, vi_to, input_count, clear=False, out_size=-1, offset=0, debug=0):
         # vertex_format = VertexFormat( (b'inValue', 1, 'float'),)
+        self.print_debug(debug, cgl.glGetError(), "Starting Transform Feedback")
         vertex_format = VertexFormat( *self.in_format )
         
         if out_size == -1:
@@ -1336,6 +1337,7 @@ cdef class TransformFeedback(ObjectWithUid):
         vi_to.indices = list(range(int(primitives[0]+offset // out_size // 4)))
         # vi_to.gbatch.buffer_update()
 
+        self.print_debug(debug, cgl.glGetError(), "Feedback done")
         return primitives[0]
 
 

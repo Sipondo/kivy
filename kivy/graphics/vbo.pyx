@@ -164,6 +164,7 @@ cdef class VBO:
         self.is_transform_feedback=i
 
 
+
 cdef class VertexBatch:
     def __init__(self, **kwargs):
         self.usage  = GL_DYNAMIC_DRAW
