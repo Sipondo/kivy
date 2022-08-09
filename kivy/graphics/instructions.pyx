@@ -1306,6 +1306,9 @@ cdef class TransformFeedback(ObjectWithUid):
 
         self.print_debug(debug, cgl.glGetError(), "Actual BUFSIZE:", ACTUAL_BUFSIZE)
 
+        cgl.glDeleteQueries(1, &query)
+        self.print_debug(debug, cgl.glGetError(), "Released query")
+
 
         self.print_debug(debug, cgl.glGetError(), "Enabling Rasterizer")
         cgl.glDisable(GL_RASTERIZER_DISCARD)

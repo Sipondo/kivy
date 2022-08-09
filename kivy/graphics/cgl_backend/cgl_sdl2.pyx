@@ -35,6 +35,7 @@ def init_backend():
         cgl.glBeginQuery = <GLBEGINQUERY>SDL_GL_GetProcAddress("glBeginQuery")
         cgl.glEndQuery = <GLENDQUERY>SDL_GL_GetProcAddress("glEndQuery")
         cgl.glGenQueries = <GLGENQUERIES>SDL_GL_GetProcAddress("glGenQueries")
+        cgl.glDeleteQueries = <GLDELETEQUERIES>SDL_GL_GetProcAddress("glDeleteQueries")
         cgl.glGetQueryObjectuiv = <GLGETQUERYOBJECTUIV>SDL_GL_GetProcAddress("glGetQueryObjectuiv")
 
         cgl.glBindAttribLocation = <GLBINDATTRIBLOCATIONPTR>SDL_GL_GetProcAddress("glBindAttribLocation")

@@ -418,6 +418,7 @@ ctypedef GLboolean (__stdcall *GLUNMAPBUFFER)(GLenum) nogil
 ctypedef void (__stdcall *GLBEGINQUERY)(GLenum, GLuint) nogil
 ctypedef void (__stdcall *GLENDQUERY)(GLenum) nogil
 ctypedef void (__stdcall *GLGENQUERIES)(GLsizei, GLuint *ids) nogil
+ctypedef void (__stdcall *GLDELETEQUERIES)(GLsizei, GLuint *ids) nogil
 ctypedef void (__stdcall *GLGETQUERYOBJECTUIV)(GLuint, GLenum, GLuint *params) nogil
 
 ctypedef void (__stdcall *GLBINDATTRIBLOCATIONPTR)(GLuint, GLuint, const char *) nogil
@@ -563,6 +564,7 @@ ctypedef struct GLES2_Context:
     void (__stdcall *glBeginQuery)(GLenum, GLuint) nogil
     void (__stdcall *glEndQuery)(GLenum) nogil
     void (__stdcall *glGenQueries)(GLsizei, GLuint *ids) nogil
+    void (__stdcall *glDeleteQueries)(GLsizei, GLuint *ids) nogil
     void (__stdcall *glGetQueryObjectuiv)(GLuint, GLenum, GLuint *params) nogil
 
     void (__stdcall *glBindAttribLocation)(GLuint, GLuint, const char *) nogil

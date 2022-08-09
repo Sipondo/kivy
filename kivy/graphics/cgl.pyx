@@ -150,6 +150,8 @@ cdef void log_cgl_funcs() except *:
         Logger.debug('GL: glEndQuery is not available')
     if cgl.glGenQueries == NULL:
         Logger.debug('GL: glGenQueries is not available')
+    if cgl.glDeleteQueries == NULL:
+        Logger.debug('GL: glDeleteQueries is not available')
     if cgl.glGetQueryObjectuiv == NULL:
         Logger.debug('GL: glGetQueryObjectuiv is not available')
 

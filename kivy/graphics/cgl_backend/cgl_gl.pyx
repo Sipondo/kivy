@@ -37,6 +37,7 @@ cdef extern from "gl_redirect.h":
     void (__stdcall *glBeginQuery)(GLenum, GLuint) nogil
     void (__stdcall *glEndQuery)(GLenum) nogil
     void (__stdcall *glGenQueries)(GLsizei, GLuint *ids) nogil
+    void (__stdcall *glDeleteQueries)(GLsizei, GLuint *ids) nogil
     void (__stdcall *glGetQueryObjectuiv)(GLuint, GLenum, GLuint *params) nogil
 
 
@@ -184,6 +185,7 @@ cpdef link_static():
         cgl.glBeginQuery = glBeginQuery
         cgl.glEndQuery = glEndQuery
         cgl.glGenQueries = glGenQueries
+        cgl.glDeleteQueries = glDeleteQueries
         cgl.glGetQueryObjectuiv = glGetQueryObjectuiv
         
         cgl.glBindAttribLocation = glBindAttribLocation
